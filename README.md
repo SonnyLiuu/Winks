@@ -1,5 +1,6 @@
 # Winks
-----how to run the file
+
+--How to run the file
 
 cd OpenCV
 
