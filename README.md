@@ -4,6 +4,6 @@
 
 cd OpenCV
 
-cd venv\Scripts\activate  
+venv\Scripts\activate  #activates the virtual enviroment
 
 python3 eye_tracking.py
