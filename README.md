@@ -10,11 +10,11 @@ cd OpenCV
 
 mac 
 
-source venv\Scripts\activate         
+source venv/bin/activate     
 
 windows
 
-venv\Scripts\activate
+venv/bin/activate
 
 
 
