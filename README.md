@@ -5,7 +5,7 @@
 cd OpenCV
 
 
-#activates the virtual enviroment
+#activates the virtual environment
 
 
 mac 
