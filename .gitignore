@@ -1,0 +1,9 @@
+# Ignore Visual Studio temporary files, build results, and
+# .NET Core dependencies
+.vs/
+*.user
+bin/
+obj/
+*.suo
+*.userosscache
+*.sln.docstates
