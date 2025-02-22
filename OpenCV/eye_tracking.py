@@ -1,6 +1,4 @@
-
-# to activate the needed libraries run "venv\Scripts\activate" on the terminal, make sure that you are in the OpenCV folder
-
+# to activate the needed libraries run "source venv/bin/activate" on the terminal, make sure that you are in the OpenCV folder
 
 import cv2
 import mediapipe as mp
@@ -11,18 +9,16 @@ import pygame
 pygame.mixer.init()
 sound = pygame.mixer.Sound("blink.mp3") 
 
-# Initialize MediaPipe Face Mesh and detects face
-# media pipe also automatically calculates the landmarks on the users face
+# Initialize MediaPipe Face Mesh
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh()
 mp_drawing = mp.solutions.drawing_utils
 
-# Opens Webcam
+# Open Webcam
 cap = cv2.VideoCapture(0)
 
-
-# Eye landmarks (left & right eye indexes in MediaPipe) 
-LEFT_EYE = [362, 385, 387, 263, 373, 380]   # Right eye 
+# Eye landmarks (left & right eye indexes in MediaPipe)
+LEFT_EYE = [362, 385, 387, 263, 373, 380]   # Right eye
 RIGHT_EYE = [33, 160, 158, 133, 153, 144]  # Left eye
 
 def eye_aspect_ratio(landmarks, eye_points):
@@ -33,16 +29,22 @@ def eye_aspect_ratio(landmarks, eye_points):
     right = landmarks[eye_points[3]].x
     return (bottom - top) / (right - left)
 
-# Blink Threshold
-BLINK_RATIO = 0.45
+# Blink Thresholds
+BLINK_RATIO = 0.35
+L_BLINK_RATIO = 0.39
+R_BLINK_RATIO = 0.38
 
+# Blink Counters
 blink_counter = 0
 left_blink_counter = 0
 right_blink_counter = 0
+
+# Blink and Head Tracking Flags
 blink_start_time = None
-blink_active = False  # Prevents multiple detections
-text_display = ""  # Message to display on UI
+blink_active = False  
+text_display = ""  # For blink messages
 text_timer = 0  
+BLINK_COOLDOWN = 0.5  # Minimum time between blinks (in seconds)
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -57,48 +59,44 @@ while cap.isOpened():
 
     if results.multi_face_landmarks:
         for face_landmarks in results.multi_face_landmarks:
-            # Draw face mesh
-            mp_drawing.draw_landmarks(
-                frame, 
-                face_landmarks, 
-                mp_face_mesh.FACEMESH_TESSELATION,  
-                mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=1, circle_radius=1),  
-                mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=1, circle_radius=1)
-            )
+            landmarks = face_landmarks.landmark
 
             # Get eye aspect ratio for both eyes
-            landmarks = face_landmarks.landmark
             left_ear = eye_aspect_ratio(landmarks, LEFT_EYE)
             right_ear = eye_aspect_ratio(landmarks, RIGHT_EYE)
-            
+
             # Check for blink types
-            left_blink = left_ear < BLINK_RATIO
-            right_blink = right_ear < BLINK_RATIO
-            
-            # Detect left, right, and both-eye blinks
+            left_blink = left_ear < L_BLINK_RATIO
+            right_blink = right_ear < R_BLINK_RATIO
+
+            # Get current time
+            current_time = time.time()
+
+            # Detect left, right, and both-eye blinks with cooldown
             if (left_blink or right_blink) and not blink_active:
-                blink_active = True  # Set flag to prevent multiple counts
-                blink_start_time = time.time()
-                text_timer = time.time()  # Start text display timer
-                sound.play()  # Play blink sound
+                if blink_start_time is None or (current_time - blink_start_time > BLINK_COOLDOWN):
+                    blink_active = True
+                    blink_start_time = current_time
+                    text_timer = current_time  # Start text display timer
+                    sound.play()
 
-                if left_blink and right_blink:
-                    text_display = "Both Eyes Blinked!"
-                    blink_counter += 1
-                elif left_blink:
-                    text_display = "Left Blink Detected!"
-                    left_blink_counter += 1
-                elif right_blink:
-                    text_display = "Right Blink Detected!"
-                    right_blink_counter += 1
+                    if left_blink and right_blink:
+                        text_display = "Both Eyes Blinked!"
+                        blink_counter += 1
+                    elif left_blink:
+                        text_display = "Left Blink Detected!"
+                        left_blink_counter += 1
+                    elif right_blink:
+                        text_display = "Right Blink Detected!"
+                        right_blink_counter += 1
 
-                print(text_display)  # Print to console
-            
-            # Reset flag only when both eyes are fully opened again
+                    print(text_display)
+
+            # Reset blink flag only when both eyes are fully opened again
             elif not left_blink and not right_blink:
-                blink_active = False  # Reset flag, allowing a new blink to be counted
+                blink_active = False
 
-    # Display blink detection messages on the screen for 1 second
+    # Display blink detection messages for 1 second
     if text_display and (time.time() - text_timer < 1):
         cv2.putText(frame, text_display, (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
