@@ -11,10 +11,10 @@
             <ColumnDefinition Width="39*"/>
             <ColumnDefinition Width="161*"/>
         </Grid.ColumnDefinitions>
-        <TextBlock Grid.Column="1" HorizontalAlignment="Center" Margin="0,41,0,0" TextWrapping="Wrap" Text="HelloWorld" VerticalAlignment="Top"/>
-        <RadioButton x:Name="HelloButton" Grid.Column="1" Content="Hello" HorizontalAlignment="Left" Margin="158,168,0,0" VerticalAlignment="Top" IsChecked="True"/>
-        <RadioButton x:Name="GoodbyeButton" Grid.Column="1" Content="Goodbye" HorizontalAlignment="Left" Margin="401,168,0,0" VerticalAlignment="Top"/>
-        <Button Grid.Column="1" Content="Display" HorizontalAlignment="Center" Margin="0,308,0,0" VerticalAlignment="Top" Click="Button_Click"/>
+        <TextBlock Grid.Column="1" HorizontalAlignment="Center" Margin="0,41,0,0" TextWrapping="Wrap" VerticalAlignment="Top"><Run Text="Display Assist Menu"/><LineBreak/><Run/></TextBlock>
+        <RadioButton x:Name="DisplayAssistButton" Grid.Column="1" Content="Show" HorizontalAlignment="Left" Margin="158,168,0,0" VerticalAlignment="Top" IsChecked="True" Checked="HelloButton_Checked"/>
+        <RadioButton x:Name="HideAssistButton" Grid.Column="1" Content="Hide" HorizontalAlignment="Left" Margin="401,168,0,0" VerticalAlignment="Top"/>
+        <Button Grid.Column="1" Content="Apply" HorizontalAlignment="Center" Margin="0,308,0,0" VerticalAlignment="Top" Click="Button_Click"/>
 
     </Grid>
 </Window>

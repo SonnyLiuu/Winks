@@ -16,20 +16,28 @@ namespace WinksUI;
 /// </summary>
 public partial class MainWindow : Window
 {
+    private AssistMenu assistMenu;
     public MainWindow()
     {
         InitializeComponent();
+        assistMenu = new AssistMenu();
+
     }
 
     private void Button_Click(object sender, RoutedEventArgs e)
     {
-        if (HelloButton.IsChecked == true)
+        if (DisplayAssistButton.IsChecked == true)
         {
-            MessageBox.Show("Hello.");
+            assistMenu.Show();
         }
-        else if (GoodbyeButton.IsChecked == true)
+        else if (HideAssistButton.IsChecked == true)
         {
-            MessageBox.Show("Goodbye.");
+            assistMenu.Hide();
         }
+    }
+
+    private void HelloButton_Checked(object sender, RoutedEventArgs e)
+    {
+
     }
 }
