@@ -4,6 +4,7 @@ import cv2
 import mediapipe as mp
 import time
 import pygame
+import pyautogui
 
 # Initialize pygame for sound
 pygame.mixer.init()
@@ -32,7 +33,7 @@ def eye_aspect_ratio(landmarks, eye_points):
 # Blink Thresholds
 BLINK_RATIO = 0.35
 L_BLINK_RATIO = 0.39
-R_BLINK_RATIO = 0.38
+R_BLINK_RATIO = 0.40
 
 # Blink Counters
 blink_counter = 0
@@ -73,12 +74,33 @@ while cap.isOpened():
             current_time = time.time()
 
             # Detect left, right, and both-eye blinks with cooldown
-            if (left_blink or right_blink) and not blink_active:
+            if (left_blink) and not blink_active:
                 if blink_start_time is None or (current_time - blink_start_time > BLINK_COOLDOWN):
                     blink_active = True
                     blink_start_time = current_time
                     text_timer = current_time  # Start text display timer
                     sound.play()
+                    pyautogui.click()
+
+                    if left_blink and right_blink:
+                        text_display = "Both Eyes Blinked!"
+                        blink_counter += 1
+                    elif left_blink:
+                        text_display = "Left Blink Detected!"
+                        left_blink_counter += 1
+                    elif right_blink:
+                        text_display = "Right Blink Detected!"
+                        right_blink_counter += 1
+
+                    print(text_display)
+                
+            if (right_blink) and not blink_active:
+                if blink_start_time is None or (current_time - blink_start_time > BLINK_COOLDOWN):
+                    blink_active = True
+                    blink_start_time = current_time
+                    text_timer = current_time  # Start text display timer
+                    sound.play()
+                    pyautogui.rightClick()
 
                     if left_blink and right_blink:
                         text_display = "Both Eyes Blinked!"
