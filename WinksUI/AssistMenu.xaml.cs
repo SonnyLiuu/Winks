@@ -1,66 +1,104 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Input;
-using System.Windows.Interop;
 
 namespace WinksUI
 {
     public partial class AssistMenu : Window
     {
-        private const int WS_EX_NOACTIVATE = 0x08000000;
-        private const int GWL_EXSTYLE = -20;
+        // Constants for scrolling
+        private const uint MOUSEEVENTF_WHEEL = 0x0800;
+        private const int WHEEL_DELTA = 120;
 
-        // Import user32.dll to simulate key presses
+        // Import necessary functions from user32.dll
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern void mouse_event(uint dwFlags, uint dx, uint dy, int dwData, UIntPtr dwExtraInfo);
+
         [DllImport("user32.dll")]
-        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool SetCursorPos(int X, int Y);
 
-        private const int KEYEVENTF_KEYDOWN = 0x0000; // Key down flag
-        private const int KEYEVENTF_KEYUP = 0x0002;   // Key up flag
+        [DllImport("user32.dll")]
+        static extern bool GetCursorPos(out POINT lpPoint);
 
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern int GetWindowLong(IntPtr hwnd, int index);
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POINT
+        {
+            public int X;
+            public int Y;
+        }
 
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern int SetWindowLong(IntPtr hwnd, int index, int newStyle);
+        private POINT initialCursorPosition;
+        private POINT desiredLocation; // Variable to store the desired location
 
         public AssistMenu()
         {
             InitializeComponent();
         }
 
-        // Override OnSourceInitialized to prevent the window from taking focus when clicked
-        protected override void OnSourceInitialized(EventArgs e)
+        private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            var hwnd = new WindowInteropHelper(this).Handle;
-            int style = GetWindowLong(hwnd, GWL_EXSTYLE);
-            SetWindowLong(hwnd, GWL_EXSTYLE, style | WS_EX_NOACTIVATE);
+            // Get the desktop's working area (excluding taskbars)
+            var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 
-            base.OnSourceInitialized(e);
+            // Position the window at the bottom-left corner
+            this.Left = desktopWorkingArea.Left;
+            this.Top = desktopWorkingArea.Bottom - this.Height;
         }
 
-        // Simulate pressing the "Up Arrow" key when the UpButton is clicked
-        private void UpButton_Click(object sender, RoutedEventArgs e)
+        private async void UpButton_Click(object sender, RoutedEventArgs e)
         {
-            SimulateKeyPress(Key.Up);
+            await TeleportCursorAndScrollAsync(3); // Scroll up by 3 lines
         }
 
-        // Simulate pressing the "Down Arrow" key when the DownButton is clicked
-        private void DownButton_Click(object sender, RoutedEventArgs e)
+        private async void DownButton_Click(object sender, RoutedEventArgs e)
         {
-            SimulateKeyPress(Key.Down);
+            await TeleportCursorAndScrollAsync(-3); // Scroll down by 3 lines
         }
 
-        // Simulate key press using keybd_event API
-        private void SimulateKeyPress(Key key)
+        private async Task TeleportCursorAndScrollAsync(int scrollAmount)
         {
-            byte virtualKeyCode = (byte)KeyInterop.VirtualKeyFromKey(key);
+            // Get the current cursor position
+            GetCursorPos(out initialCursorPosition);
 
-            // Simulate key down
-            keybd_event(virtualKeyCode, 0, KEYEVENTF_KEYDOWN, 0);
+            // Use the user's desired location instead of the screen center
+            SetCursorPos(desiredLocation.X, desiredLocation.Y); // Teleport cursor to the user's desired location
 
-            // Simulate key up
-            keybd_event(virtualKeyCode, 0, KEYEVENTF_KEYUP, 0);
+            // Simulate scrolling under the cursor
+            SimulateScroll(scrollAmount);
+
+            // Teleport the cursor back to the original position
+            SetCursorPos(initialCursorPosition.X, initialCursorPosition.Y);
+        }
+
+        // Simulate scrolling under the cursor
+        private void SimulateScroll(int scrollAmount)
+        {
+            // The scroll amount (WHEEL_DELTA is 120 for a single tick of the wheel)
+            int scrollValue = scrollAmount * WHEEL_DELTA;
+
+            // Simulate the mouse wheel event
+            mouse_event(MOUSEEVENTF_WHEEL, 0, 0, scrollValue, UIntPtr.Zero);
+        }
+
+        private void BlueButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Create and show the transparent grey overlay
+            overlayGetClick overlay = new overlayGetClick();
+
+            // Subscribe to the event to get the cursor position when the overlay is clicked
+            overlay.CursorPositionReturned += (cursorPosition) =>
+            {
+                // Convert System.Windows.Point to WinksUI.AssistMenu.POINT
+                desiredLocation = new POINT
+                {
+                    X = (int)cursorPosition.X,
+                    Y = (int)cursorPosition.Y
+                };
+            };
+
+            overlay.Show();
         }
     }
 }

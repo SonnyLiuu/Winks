@@ -5,17 +5,41 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WinksUI"
         mc:Ignorable="d"
-        Title="AssistMenu" Height="100" Width="200" 
+        Title="AssistMenu" Height="150" Width="150" 
         WindowStyle="None" 
         AllowsTransparency="True"
         Topmost="True"
+        Background="Transparent"
+        Loaded="Window_Loaded"
         ShowInTaskbar="False">
     <Grid>
-        <StackPanel>
-            <!-- Scroll up button -->
-            <Button Name="UpButton" Content="↑" Click="UpButton_Click" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" BorderBrush="Transparent" Focusable="False" IsTabStop="False"/>
-            <!-- Scroll down button -->
-            <Button Name="DownButton" Content="↓" Click="DownButton_Click" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" BorderBrush="Transparent" Focusable="False" IsTabStop="False"/>
-        </StackPanel>
+        <!-- Define a 2x2 Grid -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Scroll up button (top-left) -->
+        <Button Name="UpButton" Content="↑" Click="UpButton_Click" FontSize="30"
+                BorderBrush="Transparent" Focusable="False" IsTabStop="False"
+                HorizontalAlignment="Center" VerticalAlignment="Center" 
+                Width="50" Height="50" Grid.Row="0" Grid.Column="0" />
+
+        <!-- Scroll down button (bottom-left) -->
+        <Button Name="DownButton" Content="↓" Click="DownButton_Click" FontSize="30"
+                BorderBrush="Transparent" Focusable="False" IsTabStop="False"
+                HorizontalAlignment="Center" VerticalAlignment="Center" 
+                Width="50" Height="50" Grid.Row="1" Grid.Column="0" />
+
+        <!-- Blue circular button (bottom-right) -->
+        <Button Name="BlueButton" Click="BlueButton_Click" Content="●" Width="40" Height="40" FontSize="16"
+                Background="Blue" Foreground="White" BorderBrush="Transparent"
+                HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Grid.Column="1"
+                Focusable="False" IsTabStop="False" 
+                Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" />
     </Grid>
 </Window>
