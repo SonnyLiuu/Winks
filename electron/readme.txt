@@ -1,0 +1,1 @@
+Electron main process scripts and config
