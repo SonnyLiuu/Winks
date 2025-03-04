@@ -1,10 +1,13 @@
 {
-  "name": "app",
+  "name": "winks",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "npm run build-client && npm run electron",
+    "build-client": "cd client && npm run build",
+    "electron": "electron ./electron/main.js",
+    "dev": "concurrently \"cd client && npm start\" \"electron ./electron/main.js\""
   },
   "keywords": [],
   "author": "",
