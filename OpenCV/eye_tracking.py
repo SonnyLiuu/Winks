@@ -32,8 +32,8 @@ def eye_aspect_ratio(landmarks, eye_points):
 
 # Blink Thresholds
 BLINK_RATIO = 0.35
-L_BLINK_RATIO = 0.39
-R_BLINK_RATIO = 0.40
+L_BLINK_RATIO = 0.38
+R_BLINK_RATIO = 0.39
 
 # Blink Counters
 blink_counter = 0
