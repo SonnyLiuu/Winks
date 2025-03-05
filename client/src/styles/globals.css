@@ -1,0 +1,10 @@
+/* globals.css */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  /* height: 100% is OK, but 100vh often works more predictably
+     if you want a full viewport layout. */
+  height: 100vh;
+  width: 100%;
+}

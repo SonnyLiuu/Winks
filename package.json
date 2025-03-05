@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "npm run build-client && npm run electron",
     "build-client": "cd client && npm run build",
     "electron": "electron ./electron/main.js",
+    "start": "npm run build-client && npm run electron",
     "dev": "concurrently \"cd client && npm start\" \"electron ./electron/main.js\""
   },
   "keywords": [],
