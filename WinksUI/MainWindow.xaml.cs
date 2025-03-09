@@ -29,10 +29,11 @@ public partial class MainWindow : Window
         if (DisplayAssistButton.IsChecked == true)
         {
             assistMenu.Show();
+            assistMenu.IsOpen = true;
         }
         else if (HideAssistButton.IsChecked == true)
         {
-            assistMenu.Hide();
+            assistMenu.IsOpen = false;
         }
     }
 
