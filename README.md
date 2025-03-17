@@ -1,21 +1,28 @@
-# Winks
+This project uses Python 3.10.11 along with the following key libraries:
+- mediapipe
+- opencv-python (cv2)
+- pyautogui
+- numpy
+- pygame
 
---How to run the file
+Follow these steps to set up your virtual environment and install the dependencies.
 
-cd OpenCV
+# Creating Venv (first time only)
+Windows
+python -m venv venv
 
+Mac
+python3 -m venv venv
 
-#activates the virtual environment
+# Enter the Venv
+Windows
+venv\Scripts\activate
 
+Mac
+source venv/bin/activate
 
-mac 
+# Install dependencies
+pip install -r requirements.txt
 
-source venv/bin/activate     
-
-windows
-
-venv/bin/activate
-
-
-
-python3 eye_tracking.py
+# Run code inside the venv
+python head_tracking.py

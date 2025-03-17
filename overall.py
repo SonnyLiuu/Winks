@@ -5,6 +5,44 @@ import time
 import numpy as np
 import pygame
 
+import socket
+import struct
+import pickle
+
+# Create and connect the client socket
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.connect(('127.0.0.1', 5555))
+
+data_buffer = b""
+payload_size = struct.calcsize("Q")  # 8 bytes for frame length header
+
+def get_frame():
+	global data_buffer
+	# Wait until we have enough bytes for the frame length header.
+	while len(data_buffer) < payload_size:
+		packet = client_socket.recv(16384)  # Increased buffer size to 16KB
+		if not packet:
+			return None
+		data_buffer += packet
+
+	# Extract the frame size from the header.
+	packed_msg_size = data_buffer[:payload_size]
+	data_buffer = data_buffer[payload_size:]
+	msg_size = struct.unpack("Q", packed_msg_size)[0]
+
+	# Wait until the entire frame is received.
+	while len(data_buffer) < msg_size:
+		packet = client_socket.recv(16384)
+		if not packet:
+			return None
+		data_buffer += packet
+
+	frame_data = data_buffer[:msg_size]
+	data_buffer = data_buffer[msg_size:]
+	# Convert the JPEG byte stream to a NumPy array and decode
+	frame = pickle.loads(frame_data)
+	return frame
+
 # Initialize pygame for sound
 pygame.mixer.init()
 sound = pygame.mixer.Sound("blink.mp3") 
@@ -36,9 +74,9 @@ def eye_aspect_ratio(landmarks, eye_points):
     return (bottom - top) / (right - left)
 
 # Blink Thresholds
-BLINK_RATIO = 0.35
-L_BLINK_RATIO = 0.38
-R_BLINK_RATIO = 0.39
+BLINK_RATIO = 0.34
+L_BLINK_RATIO = 0.39
+R_BLINK_RATIO = 0.4
 
 # Blink Counters
 blink_counter = 0
@@ -62,11 +100,11 @@ smoothing_factor = 5  # Higher value = smoother movement
 prev_x_positions = []
 prev_y_positions = []
 
-while cap.isOpened():
-    ret, frame = cap.read()
-    if not ret:
-        break
-
+while True:
+    frame = get_frame()
+    if frame is None:
+        print("Disconnected or no more frames.")
+        break 
     # Convert the image to RGB
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     
