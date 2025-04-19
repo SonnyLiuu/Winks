@@ -5,6 +5,8 @@ import mediapipe as mp
 import time
 import pygame
 import pyautogui
+import threading
+from collections import deque
 
 # Initialize pygame for sound
 pygame.mixer.init()
@@ -12,49 +14,72 @@ sound = pygame.mixer.Sound("blink.mp3")
 
 # Initialize MediaPipe Face Mesh
 mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh()
+face_mesh = mp_face_mesh.FaceMesh(static_image_mode=False, max_num_faces=1, refine_landmarks=True)
 mp_drawing = mp.solutions.drawing_utils
 
 # Open Webcam
 cap = cv2.VideoCapture(0)
 
 # Eye landmarks (left & right eye indexes in MediaPipe)
-LEFT_EYE = [362, 385, 387, 263, 373, 380]   # Right eye
+LEFT_EYE = [362, 385, 387, 263, 373, 380]  # Right eye
 RIGHT_EYE = [33, 160, 158, 133, 153, 144]  # Left eye
 
 def eye_aspect_ratio(landmarks, eye_points):
-    """Calculate the eye aspect ratio to detect blinks."""
+    """Calculate the eye aspect ratio to detect winks."""
     top = (landmarks[eye_points[1]].y + landmarks[eye_points[2]].y) / 2
     bottom = (landmarks[eye_points[4]].y + landmarks[eye_points[5]].y) / 2
     left = landmarks[eye_points[0]].x
     right = landmarks[eye_points[3]].x
     return (bottom - top) / (right - left)
 
-# Blink Thresholds
-BLINK_RATIO = 0.35
-L_BLINK_RATIO = 0.39
-R_BLINK_RATIO = 0.40
+# Plays a sound and triggers a mouse click (left or right) in a separate thread.
+# This prevents blocking the main video processing loop, ensuring responsive interaction.
+def play_sound_and_click(is_right_click=False):
+    threading.Thread(target=sound.play).start()
+    if is_right_click:
+        threading.Thread(target=pyautogui.rightClick).start()
+    else:
+        threading.Thread(target=pyautogui.click).start()
 
-# Blink Counters
-blink_counter = 0
-left_blink_counter = 0
-right_blink_counter = 0
+# EAR smoothing
+smooth_window = 3
+left_ear_queue = deque(maxlen=smooth_window)
+right_ear_queue = deque(maxlen=smooth_window)
 
-# Blink and Head Tracking Flags
-blink_start_time = None
-blink_active = False  
-text_display = ""  # For blink messages
-text_timer = 0  
-BLINK_COOLDOWN = 0.5  # Minimum time between blinks (in seconds)
+# Wink Thresholds
+BOTH_CLOSED_RATIO = 0.25
+L_WINK_RATIO = 0.23
+R_WINK_RATIO = 0.24
+
+# Frame requirements
+succ_frame = 2
+left_frame = 0
+right_frame = 0
+both_frame = 0
+
+# Wink Tracking Flags
+blink_in_progress = False  # Used only to track blinks
+left_wink_in_progress = False
+right_wink_in_progress = False
+text_display = ""  # For wink messages
+text_timer = 0
+
+# Wink cooldowns
+WINK_COOLDOWN = 0.5  # seconds
+last_left_wink = 0
+last_right_wink = 0
 
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
         break
 
+    # Resize frame to standard width
+    frame = cv2.resize(frame, (640, int(frame.shape[0] * 640 / frame.shape[1])))
+
     # Convert BGR to RGB
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    
+
     # Process the frame with MediaPipe
     results = face_mesh.process(rgb_frame)
 
@@ -63,72 +88,71 @@ while cap.isOpened():
             landmarks = face_landmarks.landmark
 
             # Get eye aspect ratio for both eyes
-            left_ear = eye_aspect_ratio(landmarks, LEFT_EYE)
-            right_ear = eye_aspect_ratio(landmarks, RIGHT_EYE)
+            left_ear_raw = eye_aspect_ratio(landmarks, LEFT_EYE)
+            right_ear_raw = eye_aspect_ratio(landmarks, RIGHT_EYE)
 
-            # Check for blink types
-            left_blink = left_ear < L_BLINK_RATIO
-            right_blink = right_ear < R_BLINK_RATIO
+            left_ear_queue.append(left_ear_raw)
+            right_ear_queue.append(right_ear_raw)
+
+            left_ear = sum(left_ear_queue) / len(left_ear_queue)
+            right_ear = sum(right_ear_queue) / len(right_ear_queue)
+            avg_ear = (left_ear + right_ear) / 2
 
             # Get current time
             current_time = time.time()
 
-            # Detect left, right, and both-eye blinks with cooldown
-            if (left_blink) and not blink_active:
-                if blink_start_time is None or (current_time - blink_start_time > BLINK_COOLDOWN):
-                    blink_active = True
-                    blink_start_time = current_time
-                    text_timer = current_time  # Start text display timer
-                    sound.play()
-                    pyautogui.click()
+            # Detect blinks to suppress winks
+            if left_ear < L_WINK_RATIO and right_ear < R_WINK_RATIO:
+                both_frame += 1
+                left_frame = 0
+                right_frame = 0
+                if both_frame >= succ_frame and not blink_in_progress:
+                    blink_in_progress = True
+            else:
+                both_frame = 0
+                blink_in_progress = False
 
-                    if left_blink and right_blink:
-                        text_display = "Both Eyes Blinked!"
-                        blink_counter += 1
-                    elif left_blink:
-                        text_display = "Left Blink Detected!"
-                        left_blink_counter += 1
-                    elif right_blink:
-                        text_display = "Right Blink Detected!"
-                        right_blink_counter += 1
+                # Left wink detection only if right eye is clearly open
+                if left_ear < L_WINK_RATIO and right_ear > R_WINK_RATIO + 0.02:
+                    left_frame += 1
+                    right_frame = 0
+                    if left_frame >= succ_frame and not left_wink_in_progress and (
+                            current_time - last_left_wink) > WINK_COOLDOWN:
+                        left_wink_in_progress = True
+                        last_left_wink = current_time
+                        text_timer = current_time
+                        play_sound_and_click()
+                        text_display = "Left Wink Detected!"
+                        print(text_display)
+                else:
+                    left_frame = 0
+                    left_wink_in_progress = False
 
-                    print(text_display)
-                
-            if (right_blink) and not blink_active:
-                if blink_start_time is None or (current_time - blink_start_time > BLINK_COOLDOWN):
-                    blink_active = True
-                    blink_start_time = current_time
-                    text_timer = current_time  # Start text display timer
-                    sound.play()
-                    pyautogui.rightClick()
+                # Right wink detection only if left eye is clearly open
+                if right_ear < R_WINK_RATIO and left_ear > L_WINK_RATIO + 0.02:
+                    right_frame += 1
+                    if right_frame >= succ_frame and not right_wink_in_progress and (
+                            current_time - last_right_wink) > WINK_COOLDOWN:
+                        right_wink_in_progress = True
+                        last_right_wink = current_time
+                        text_timer = current_time
+                        play_sound_and_click(is_right_click=True)
+                        text_display = "Right Wink Detected!"
+                        print(text_display)
+                else:
+                    right_frame = 0
+                    right_wink_in_progress = False
 
-                    if left_blink and right_blink:
-                        text_display = "Both Eyes Blinked!"
-                        blink_counter += 1
-                    elif left_blink:
-                        text_display = "Left Blink Detected!"
-                        left_blink_counter += 1
-                    elif right_blink:
-                        text_display = "Right Blink Detected!"
-                        right_blink_counter += 1
+            # EAR value display
+            cv2.putText(frame, f"L_EAR: {left_ear:.2f}  R_EAR: {right_ear:.2f}", (50, 60), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.7, (255, 255, 0), 2)
 
-                    print(text_display)
-
-            # Reset blink flag only when both eyes are fully opened again
-            elif not left_blink and not right_blink:
-                blink_active = False
-
-    # Display blink detection messages for 1 second
+    # Display wink detection messages for 1 second
     if text_display and (time.time() - text_timer < 1):
         cv2.putText(frame, text_display, (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
-    # Display blink counters
-    cv2.putText(frame, f"Left Blinks: {left_blink_counter}", (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(frame, f"Right Blinks: {right_blink_counter}", (50, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(frame, f"Both Blinks: {blink_counter}", (50, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
     # Show frame
-    cv2.imshow("Blink Detection", frame)
+    cv2.imshow("Wink Detection", frame)
 
     # Exit with 'q'
     if cv2.waitKey(1) & 0xFF == ord('q'):
