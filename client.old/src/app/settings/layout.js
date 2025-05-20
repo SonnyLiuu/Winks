@@ -1,5 +1,5 @@
 // app/settings/layout.js
-"use client";
+"use client.old";
 import Navbar from "../../components/Navbar";
 import ContentHeader from "../../components/ContentHeader";
 import Header from "../../components/Header";

@@ -1,2 +1,8 @@
 node_modules/
-/client/.next/
+/client.old/.next/
+WinksUI/node_modules
+WinksUI/dist
+WinksUI/out
+WinksUI/.DS_Store
+WinksUI/.eslintcache
+WinksUI/*.log*

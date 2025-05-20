@@ -1,4 +1,4 @@
-"use client";
+"use client.old";
 import { usePathname } from "next/navigation";
 
 export default function ContentHeader() {
