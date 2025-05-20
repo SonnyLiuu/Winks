@@ -25,9 +25,13 @@ Instructions to run:
   npm i
 
 (2) Install react app dependencies
-  cd client
+  cd WinksUI
   npm i
 
-(3) build the react app and run electron
-  npm start
+(3) build the app
+  npm run build
+
+(4) Run the app
+  npm run start
+
 
