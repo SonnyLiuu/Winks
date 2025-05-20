@@ -7,6 +7,8 @@ import numpy as np
 import multiprocessing
 import cython
 
+true = cython.declare(cython.bint, 1)
+
 global cap
 cap = cv2.VideoCapture(0)
 
@@ -54,7 +56,7 @@ def get_frame(frame_queue):
         # Convert the JPEG byte stream to a NumPy array and decode
         frame = pickle.loads(frame_data)'''
     
-    while (True):
+    while (true):
         ret, frame = cap.read()
         
         #If the queue is full, simply ignore this frame and continue. This will help with reducing 'lagging' mouse movement and clicks
@@ -73,6 +75,8 @@ def image_processing(frame_queue, mouse_movement_queue, blink_queue):
     mp_drawing = mp.solutions.drawing_utils
 
     # Get screen width and height
+    '''screen_height: cython.int
+    screen_width: cython.int'''
     screen_width, screen_height = pyautogui.size()
 
     # Eye landmarks (left & right eye indexes in MediaPipe)
@@ -84,7 +88,9 @@ def image_processing(frame_queue, mouse_movement_queue, blink_queue):
 
     # Blink Thresholds
     BLINK_RATIO = 0.34
+    #L_BLINK_RATIO: cython.double
     L_BLINK_RATIO = 0.39
+    #R_BLINK_RATIO: cython.double
     R_BLINK_RATIO = 0.4
 
     # Blink Counters
@@ -98,6 +104,7 @@ def image_processing(frame_queue, mouse_movement_queue, blink_queue):
 
     # Head tracking variables
     neutral_nose_x, neutral_nose_y = None, None
+    #sensitivity: cython.double
     sensitivity = 3  # Adjust for cursor movement (lower = smoother)
     dead_zone = 0.02  # Minimum movement required to trigger cursor change
     smoothing_factor = 5  # Higher value = smoother movement
@@ -106,7 +113,7 @@ def image_processing(frame_queue, mouse_movement_queue, blink_queue):
     prev_x_positions = []
     prev_y_positions = []
     
-    while True:
+    while true:
         while frame_queue.empty(): # If the queue is empty wait until the queue is populated with something
             continue
         frame = frame_queue.get()
@@ -203,23 +210,16 @@ def image_processing(frame_queue, mouse_movement_queue, blink_queue):
             sensitivity += 1
         elif key == ord('s'):  # Decrease sensitivity
             sensitivity = max(1, sensitivity - 1)
-            
-def mouse_movement(mouse_movement_queue):
-    while True:
-        while mouse_movement_queue.empty(): # Wait until queue is populated
-            continue
-        smoothed_x, smoothed_y = mouse_movement_queue.get()
-        # Move the cursor smoothly
-        pyautogui.moveTo(smoothed_x, smoothed_y, duration=0.05)
-        
+
 def blinker(blink_queue):
     BLINK_COOLDOWN = 0.5  # Minimum time between blinks (in seconds)
     blink_start_time = None
     blink_active = False  
     
-    # Wait until the queue has something to act on
-    while True:
+    while true:
+        # Wait until the queue has something to act on
         while blink_queue.empty():
+            blink_active = False
             continue
         
         # Get current time
@@ -253,10 +253,26 @@ def blinker(blink_queue):
         # Reset blink flag only when both eyes are fully opened again
         elif not left_blink and not right_blink:
             blink_active = False
+            
+def mouse_movement(mouse_movement_queue):
+    last_time = 0
+    
+    while true:
+        while mouse_movement_queue.empty(): # Wait until queue is populated
+            continue
+        smoothed_x, smoothed_y = mouse_movement_queue.get()
+        # Move the cursor smoothly
+        pyautogui.moveTo(smoothed_x, smoothed_y, duration=0.05)
+        last_time = timer(last_time)
+            
+def timer(last_time):
+    cur_time = time.time()
+    print("time between polls: ", (cur_time - last_time))
+    return cur_time
         
 def main():
     multiprocessing.freeze_support()
-    frame_queue = multiprocessing.Queue(maxsize=1) # Create a queue that holds a max of 2 frames in advance
+    frame_queue = multiprocessing.Queue(maxsize=1) # Create a queue that holds a max of 1 frame in advance
     mouse_movement_queue = multiprocessing.Queue(maxsize=1) # Create a queue for mouse movement coordinates 1 frame in advance
     blink_queue = multiprocessing.Queue(maxsize=1) # Create a queue for detected winks
     frame_get_process = multiprocessing.Process(target=get_frame, args=(frame_queue,), daemon=True)
