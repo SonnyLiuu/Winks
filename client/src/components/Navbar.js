@@ -18,7 +18,7 @@ export default function Navbar() {
           <Link href="/settings">Settings</Link>
         </li>
         <li>
-          <button>Logout</button>
+          <button><Link href="/">Logout</Link></button>
         </li>
       </ul>
     </nav>
