@@ -1,4 +1,12 @@
 node_modules/
+/client.old/.next/
+WinksUI/node_modules
+WinksUI/dist
+WinksUI/out
+WinksUI/.DS_Store
+WinksUI/.eslintcache
+WinksUI/*.log*
+
 /client/.next/
 /.idea/.gitignore
 /.idea/vcs.xml
