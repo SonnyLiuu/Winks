@@ -1,2 +1,4 @@
 node_modules/
 /client/.next/
+/.idea/.gitignore
+/.idea/vcs.xml
