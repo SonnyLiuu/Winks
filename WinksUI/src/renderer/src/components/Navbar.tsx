@@ -1,12 +1,11 @@
 function Header(): React.JSX.Element {
-
   return (
     <nav
       style={{
-        width: "280px",
+        width: '280px',
         flex: 1,
-        background: "#f0f0f0",
-        boxSizing: "border-box",
+        background: '#f0f0f0',
+        boxSizing: 'border-box'
       }}
     >
       <ul>

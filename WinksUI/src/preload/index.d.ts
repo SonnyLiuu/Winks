@@ -1,8 +1,11 @@
-import { ElectronAPI } from '@electron-toolkit/preload'
-
 declare global {
   interface Window {
-    electron: ElectronAPI
+    electron: {
+      send: (channel: string, data?: any) => void
+      [key: string]: any
+    }
     api: unknown
   }
 }
+
+export {}

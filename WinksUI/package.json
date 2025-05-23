@@ -14,7 +14,8 @@
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
     "build": "npm run typecheck && electron-vite build",
-    "postinstall": "electron-builder install-app-deps",
+    "postinstall": "electron-builder install-app-deps && electron-rebuild -f -m ../ --only @hurdlegroup/robotjs",
+    "rebuild": "electron-rebuild -f -m ../ --only @hurdlegroup/robotjs",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
@@ -23,6 +24,7 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^4.0.0",
+    "@hurdlegroup/robotjs": "^0.12.3",
     "electron-updater": "^6.3.9"
   },
   "devDependencies": {
@@ -35,6 +37,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^35.1.5",
     "electron-builder": "^25.1.8",
+    "electron-rebuild": "^3.2.9",
     "electron-vite": "^3.1.0",
     "eslint": "^9.24.0",
     "eslint-plugin-react": "^7.37.5",

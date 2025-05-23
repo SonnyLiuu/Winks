@@ -1,0 +1,21 @@
+.button {
+  font-size: 24px;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 10px 20px;
+}
+
+
+.overlayGetClick {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5); /* Adjust opacity if needed */
+  pointer-events: auto;
+  cursor: crosshair;
+  z-index: 9999; /* Make sure it's on top */
+}
