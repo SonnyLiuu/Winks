@@ -3,6 +3,7 @@ import mediapipe as mp
 import pyautogui
 import time
 import numpy as np
+from collections import deque
 
 import multiprocessing
 import cython
@@ -64,14 +65,18 @@ def get_frame(frame_queue):
             continue
         frame_queue.put(frame)
 
-def image_processing(frame_queue, mouse_movement_queue, blink_queue):
+def image_processing(frame_queue, mouse_movement_queue, wink_queue):
     # Initialize pygame for sound
     #pygame.mixer.init()
     #sound = pygame.mixer.Sound("blink.mp3") 
 
     # Initialize MediaPipe Face Mesh
     mp_face_mesh = mp.solutions.face_mesh
-    face_mesh = mp_face_mesh.FaceMesh(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+    face_mesh = mp_face_mesh.FaceMesh(min_detection_confidence=0.5,
+                                      min_tracking_confidence=0.5,
+                                      refine_landmarks=True,
+                                      static_image_mode=False
+                                      )
     mp_drawing = mp.solutions.drawing_utils
 
     # Get screen width and height
@@ -84,19 +89,7 @@ def image_processing(frame_queue, mouse_movement_queue, blink_queue):
     RIGHT_EYE = [33, 160, 158, 133, 153, 144]  # Left eye
 
     # Nose landmark for head tracking
-    NOSE_TIP = 1  
-
-    # Blink Thresholds
-    BLINK_RATIO = 0.34
-    #L_BLINK_RATIO: cython.double
-    L_BLINK_RATIO = 0.39
-    #R_BLINK_RATIO: cython.double
-    R_BLINK_RATIO = 0.4
-
-    # Blink Counters
-    '''blink_counter = 0
-    left_blink_counter = 0
-    right_blink_counter = 0'''
+    NOSE_TIP = 1
 
     # Blink and Head Tracking Flags
     text_display = ""  # For blink messages
@@ -112,6 +105,16 @@ def image_processing(frame_queue, mouse_movement_queue, blink_queue):
     # Store previous positions for smoothing
     prev_x_positions = []
     prev_y_positions = []
+
+    # EAR smoothing
+    smooth_window = 4
+    left_ear_queue = deque(maxlen=smooth_window)
+    right_ear_queue = deque(maxlen=smooth_window)
+
+    # Wink Thresholds
+    BOTH_CLOSED_RATIO = 0.5
+    L_WINK_RATIO = 0.30
+    R_WINK_RATIO = 0.30
     
     while true:
         while frame_queue.empty(): # If the queue is empty wait until the queue is populated with something
@@ -132,8 +135,14 @@ def image_processing(frame_queue, mouse_movement_queue, blink_queue):
                 landmarks = face_landmarks.landmark
 
                 # Get eye aspect ratio for both eyes
-                left_ear = eye_aspect_ratio(landmarks, LEFT_EYE)
-                right_ear = eye_aspect_ratio(landmarks, RIGHT_EYE)
+                left_ear_raw = eye_aspect_ratio(landmarks, LEFT_EYE)
+                right_ear_raw = eye_aspect_ratio(landmarks, RIGHT_EYE)
+
+                left_ear_queue.append(left_ear_raw)
+                right_ear_queue.append(right_ear_raw)
+
+                left_ear = sum(left_ear_queue) / len(left_ear_queue)
+                right_ear = sum(right_ear_queue) / len(right_ear_queue)
 
                 # Get nose position for head tracking
                 nose_x = landmarks[NOSE_TIP].x  
@@ -180,12 +189,12 @@ def image_processing(frame_queue, mouse_movement_queue, blink_queue):
                 mouse_movement_queue.put((smoothed_x, smoothed_y))
 
                 # Check for blink types
-                left_blink = left_ear < L_BLINK_RATIO
-                right_blink = right_ear < R_BLINK_RATIO
+                left_wink = left_ear < L_WINK_RATIO
+                right_wink = right_ear < R_WINK_RATIO
                 
-                # If a blink was detected, put it into the queue and the blink process will handle it
-                if (left_blink or right_blink):
-                    blink_queue.put((left_blink, right_blink))
+                # If a wink was detected, put it into the queue and the wink process will handle it
+                if (left_wink or right_wink):
+                    wink_queue.put((left_wink, right_wink))
                 
                 # Draw face mesh landmarks
                 mp_drawing.draw_landmarks(frame, face_landmarks, mp_face_mesh.FACEMESH_TESSELATION)
@@ -200,7 +209,7 @@ def image_processing(frame_queue, mouse_movement_queue, blink_queue):
         #cv2.putText(frame, f"Right Blinks: {right_blink_counter}", (50, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
         # Show frame
-        cv2.imshow("Head Tracking & Blink Detection (Smoothed)", frame)
+        cv2.imshow("Head Tracking & Wink Detection (Smoothed)", frame)
 
         # Adjust sensitivity in real-time using arrow keys
         key = cv2.waitKey(1) & 0xFF
@@ -211,49 +220,84 @@ def image_processing(frame_queue, mouse_movement_queue, blink_queue):
         elif key == ord('s'):  # Decrease sensitivity
             sensitivity = max(1, sensitivity - 1)
 
-def blinker(blink_queue):
-    BLINK_COOLDOWN = 0.5  # Minimum time between blinks (in seconds)
-    blink_start_time = None
-    blink_active = False  
-    
+def blinker(wink_queue):
+    # Frame requirements
+    consecutive_frames = 2
+    left_frame = 0
+    right_frame = 0
+    both_frame = 0
+
+    # Wink Tracking Flags
+    blink_in_progress = False  # Used only to track blinks
+    left_wink_in_progress = False
+    right_wink_in_progress = False
+
+    # Wink cooldowns
+    WINK_COOLDOWN = 0.5  # Minimum time between winks (in seconds)
+    last_left_wink = 0
+    last_right_wink = 0
+
     while true:
         # Wait until the queue has something to act on
-        while blink_queue.empty():
-            blink_active = False
+        while wink_queue.empty():
+            blink_in_progress = False
             continue
         
         # Get current time
         current_time = time.time()
         
-        left_blink, right_blink = blink_queue.get()
+        left_wink, right_wink = wink_queue.get()
+
+        # Detect blinks to suppress winks
+        if left_wink and right_wink:
+            both_frame += 1
+            left_frame = 0
+            right_frame = 0
+            if both_frame >= consecutive_frames and not blink_in_progress:
+                blink_in_progress = True
+        else:
+            # Reset blink flag only when both eyes are fully opened again
+            both_frame = 0
+            blink_in_progress = False
+
         # Detect left blink (left-click)
-        if left_blink and not blink_active:
-            if blink_start_time is None or (current_time - blink_start_time > BLINK_COOLDOWN):
-                blink_active = True
-                blink_start_time = current_time
-                #text_timer = current_time  # Start text display timer
+        if left_wink and not right_wink:
+            left_frame += 1
+            right_frame = 0
+            current_time = time.time()
+            if left_frame >= consecutive_frames and not left_wink_in_progress and (
+                    current_time - last_left_wink) > WINK_COOLDOWN:
+                left_wink_in_progress = True
+                last_left_wink = current_time
+                #text_timer = current_time # Start text display timer
                 #sound.play()
                 pyautogui.click()
                 text_display = "Left Blink Detected! (Left Click)"
                 #left_blink_counter += 1
                 print(text_display)
+        else:
+            left_frame = 0
+            left_wink_in_progress = False
 
         # Detect right blink (right-click)
-        if right_blink and not blink_active:
-            if blink_start_time is None or (current_time - blink_start_time > BLINK_COOLDOWN):
-                blink_active = True
-                blink_start_time = current_time
+        if right_wink and not left_wink:
+            left_frame = 0
+            right_frame += 1
+            current_time = time.time()
+            if right_frame >= consecutive_frames and not right_wink_in_progress and (
+                    current_time - last_right_wink) > WINK_COOLDOWN:
+                right_wink_in_progress = True
+                last_right_wink = current_time
                 #text_timer = current_time  # Start text display timer
                 #sound.play()
                 pyautogui.rightClick()
                 text_display = "Right Blink Detected! (Right Click)"
                 #right_blink_counter += 1
                 print(text_display)
+        else:
+            right_frame = 0
+            right_wink_in_progress = False
 
-        # Reset blink flag only when both eyes are fully opened again
-        elif not left_blink and not right_blink:
-            blink_active = False
-            
 def mouse_movement(mouse_movement_queue):
     last_time = 0
     
@@ -274,11 +318,11 @@ def main():
     multiprocessing.freeze_support()
     frame_queue = multiprocessing.Queue(maxsize=1) # Create a queue that holds a max of 1 frame in advance
     mouse_movement_queue = multiprocessing.Queue(maxsize=1) # Create a queue for mouse movement coordinates 1 frame in advance
-    blink_queue = multiprocessing.Queue(maxsize=1) # Create a queue for detected winks
+    wink_queue = multiprocessing.Queue(maxsize=1) # Create a queue for detected winks
     frame_get_process = multiprocessing.Process(target=get_frame, args=(frame_queue,), daemon=True)
-    image_processor = multiprocessing.Process(target=image_processing, args=(frame_queue, mouse_movement_queue, blink_queue), daemon=True)
+    image_processor = multiprocessing.Process(target=image_processing, args=(frame_queue, mouse_movement_queue, wink_queue), daemon=True)
     mouse_mover = multiprocessing.Process(target=mouse_movement, args=(mouse_movement_queue,), daemon=True)
-    clicker = multiprocessing.Process(target=blinker, args=(blink_queue,), daemon=True)
+    clicker = multiprocessing.Process(target=blinker, args=(wink_queue,), daemon=True)
     frame_get_process.start()
     image_processor.start()
     mouse_mover.start()
