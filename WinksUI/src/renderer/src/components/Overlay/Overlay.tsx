@@ -1,8 +1,8 @@
 import { createRoot } from 'react-dom/client'
 
-import Menu from './Menu'
+import ScrollMenu from './ScrollMenu'
 
 const container = document.getElementById('overlay-root')
 if (container) {
-  createRoot(container).render(<Menu />)
+  createRoot(container).render(<ScrollMenu />)
 }
