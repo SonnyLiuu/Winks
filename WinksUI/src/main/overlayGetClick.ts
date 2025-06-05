@@ -29,8 +29,6 @@ export function createOverlayGetClick(): void {
     }
   })
 
-  overlayGetClick.webContents.openDevTools({ mode: 'detach' });
-
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     overlayGetClick.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/OverlayGetClick.html`)
   } else {
