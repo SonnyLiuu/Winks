@@ -9,19 +9,25 @@ import pickle
 import numpy as np
 import math
 from mediapipe.framework.formats import landmark_pb2
+import threading
+import time
 
 print("head_tracking.py: Script started, imports successful.")
 
-# --- Configuration ---
+# --- Configuration (matches your last provided settings) ---
 MODEL_PATH = 'face_landmarker.task'
-# Sensitivity for PHYSICAL head's left/right turn (controls HORIZONTAL mouse)
-SENSITIVITY_PHYSICAL_YAW = 50 # For physical L/R head turn -> horizontal mouse
-# Sensitivity for PHYSICAL head's up/down tilt (controls VERTICAL mouse)
-SENSITIVITY_PHYSICAL_PITCH = 50 # For physical U/D head tilt -> vertical mouse
-DEAD_ZONE_DEGREES = 1
-INVERT_HORIZONTAL_MOUSE = False
-INVERT_VERTICAL_MOUSE = False
+SENSITIVITY_PHYSICAL_YAW = 100 # For physical L/R head turn -> horizontal mouse
+SENSITIVITY_PHYSICAL_PITCH = 100 # For physical U/D head tilt -> vertical mouse
+DEAD_ZONE_DEGREES = .1 # As per your "perfect horizontal" setup
+INVERT_HORIZONTAL_MOUSE = False # As per your "perfect horizontal" setup
+INVERT_VERTICAL_MOUSE = False   # As per your "perfect horizontal" setup
 # --------------------
+
+# --- Globals for Threaded Frame Reception ---
+latest_frame_from_socket = None
+frame_lock = threading.Lock()
+network_thread_should_run = True
+# --------------------------------------------
 
 landmarker = None
 print("head_tracking.py: Global variables initialized.")
@@ -40,60 +46,101 @@ except Exception as e:
     input("head_tracking.py: Press Enter to exit...")
     exit()
 
-data_buffer = b""
-payload_size = struct.calcsize("Q")
 
-def get_frame():
-    global data_buffer
-    try:
-        while len(data_buffer) < payload_size:
-           packet = client_socket.recv(16384)
-           if not packet:
-              print("head_tracking.py: get_frame - Server closed connection (payload_size).")
-              return None
-           data_buffer += packet
-        packed_msg_size = data_buffer[:payload_size]
-        data_buffer = data_buffer[payload_size:]
-        msg_size = struct.unpack("Q", packed_msg_size)[0]
-        while len(data_buffer) < msg_size:
-           packet = client_socket.recv(16384)
-           if not packet:
-              print("head_tracking.py: get_frame - Server closed connection (msg_size).")
-              return None
-           data_buffer += packet
-        frame_data = data_buffer[:msg_size]
-        data_buffer = data_buffer[msg_size:]
-        frame = pickle.loads(frame_data)
-        return frame
-    except socket.error as e:
-        print(f"head_tracking.py: Socket error in get_frame: {e}")
-        return None
-    except Exception as e:
-        print(f"head_tracking.py: Generic error in get_frame: {e}")
-        return None
+def network_receive_thread_func(sock):
+    """
+    Thread function to continuously receive frames from the socket
+    and update the latest_frame_from_socket global variable.
+    """
+    global latest_frame_from_socket, frame_lock, network_thread_should_run
 
-# Modified to return:
-# 1. Angle for physical yaw (from function's y_pitch_from_func)
-# 2. Angle for physical pitch (NOW from function's x_roll_from_func)
+    thread_data_buffer = b""
+    thread_payload_size = struct.calcsize("Q")
+
+    sock.settimeout(0.5)
+
+    print("Network Thread: Started.")
+    while network_thread_should_run:
+        try:
+            while len(thread_data_buffer) < thread_payload_size:
+                if not network_thread_should_run: break
+                try:
+                    packet = sock.recv(4096)
+                    if not packet:
+                        print("Network Thread: Server closed connection (recv returned empty).")
+                        network_thread_should_run = False
+                        break
+                    thread_data_buffer += packet
+                except socket.timeout:
+                    continue
+                except socket.error as e:
+                    print(f"Network Thread: Socket error during header recv: {e}")
+                    network_thread_should_run = False
+                    break
+            if not network_thread_should_run: break
+            if len(thread_data_buffer) < thread_payload_size: continue
+
+            packed_msg_size = thread_data_buffer[:thread_payload_size]
+            thread_data_buffer = thread_data_buffer[thread_payload_size:]
+            msg_size = struct.unpack("Q", packed_msg_size)[0]
+
+            while len(thread_data_buffer) < msg_size:
+                if not network_thread_should_run: break
+                try:
+                    bytes_to_read = min(4096 * 4, msg_size - len(thread_data_buffer))
+                    packet = sock.recv(bytes_to_read)
+                    if not packet:
+                        print("Network Thread: Server closed connection (recv returned empty during data).")
+                        network_thread_should_run = False
+                        break
+                    thread_data_buffer += packet
+                except socket.timeout:
+                    continue
+                except socket.error as e:
+                    print(f"Network Thread: Socket error during data recv: {e}")
+                    network_thread_should_run = False
+                    break
+            if not network_thread_should_run: break
+            if len(thread_data_buffer) < msg_size: continue
+
+            frame_data_bytes = thread_data_buffer[:msg_size]
+            thread_data_buffer = thread_data_buffer[msg_size:]
+
+            decoded_frame = pickle.loads(frame_data_bytes) # Assuming server still sends pickle
+
+            with frame_lock:
+                latest_frame_from_socket = decoded_frame
+
+        except struct.error as e:
+            print(f"Network Thread: Struct unpack error: {e}")
+            thread_data_buffer = b""
+            continue
+        except pickle.UnpicklingError as e:
+            print(f"Network Thread: Pickle unpickling error: {e}")
+            thread_data_buffer = b""
+            continue
+        except Exception as e:
+            print(f"Network Thread: Generic error: {e}")
+            time.sleep(0.1)
+
+    print("Network Thread: Exiting.")
+
+
 def rotation_matrix_to_identified_physical_angles(rotation_matrix):
     sy = math.sqrt(rotation_matrix[0,0] * rotation_matrix[0,0] +  rotation_matrix[1,0] * rotation_matrix[1,0])
     singular = sy < 1e-6
     if not singular:
-        # y_pitch_from_func is what user identified as physical yaw (L/R)
         phys_yaw_val = math.atan2(-rotation_matrix[2,0], sy)
-        # x_roll_from_func is now being tested for physical pitch (U/D)
         phys_pitch_val = math.atan2(rotation_matrix[2,1] , rotation_matrix[2,2])
-        # z_yaw_from_func (original physical pitch candidate, now suspected as roll) is unused for direct control
-        # z_yaw_val_for_debug = math.atan2(rotation_matrix[1,0], rotation_matrix[0,0])
-    else: # Singularity
+    else:
         phys_yaw_val = math.atan2(-rotation_matrix[2,0], sy)
-        phys_pitch_val = math.atan2(-rotation_matrix[1,2], rotation_matrix[1,1]) # Roll in singularity
-        # z_yaw_val_for_debug = 0
+        phys_pitch_val = math.atan2(-rotation_matrix[1,2], rotation_matrix[1,1])
     return math.degrees(phys_yaw_val), math.degrees(phys_pitch_val)
 
 
 def main():
-    global landmarker
+    global landmarker, latest_frame_from_socket, frame_lock, network_thread_should_run
+
     print("head_tracking.py: main() function started.")
     try:
         print(f"head_tracking.py: Attempting to initialize FaceLandmarker with MODEL_PATH: '{MODEL_PATH}'")
@@ -111,10 +158,14 @@ def main():
         input("head_tracking.py: Press Enter to exit...")
         return
 
-    screen_width, screen_height = pyautogui.size()
+    print("Main Thread: Starting network receiver thread...")
+    receiver_thread = threading.Thread(target=network_receive_thread_func, args=(client_socket,))
+    receiver_thread.daemon = True
+    receiver_thread.start()
+
     previous_physical_yaw = 0.0
-    previous_physical_pitch = 0.0 # This will now track the angle used for vertical control
-    first_frame = True
+    previous_physical_pitch = 0.0
+    first_frame_processed = True
 
     mp_drawing = mp.solutions.drawing_utils
     mp_face_mesh_module = mp.solutions.face_mesh
@@ -124,17 +175,49 @@ def main():
     print(f"Sens: PhysYaw(Horiz): {SENSITIVITY_PHYSICAL_YAW}, PhysPitch(Vert): {SENSITIVITY_PHYSICAL_PITCH}")
     print(f"Dead Zone: {DEAD_ZONE_DEGREES} degrees")
     print("head_tracking.py: Entering main processing loop...")
-    frame_counter = 0
 
-    while True:
-        frame_bgr = get_frame()
-        if frame_bgr is None:
-            print("head_tracking.py: Received None for frame. Exiting loop.")
+    processed_frame_counter_for_fps = 0 # For FPS calculation
+    fps_display_val = 0 # FPS value to display
+    fps_start_time = time.time()
+    fps_update_interval = 1.0 # Update FPS display every 1 second
+
+    window_name = "Head Rotation Mouse Control"
+    cv2.namedWindow(window_name)
+
+
+    while network_thread_should_run:
+        current_frame_for_processing = None
+        with frame_lock:
+            if latest_frame_from_socket is not None:
+                current_frame_for_processing = latest_frame_from_socket.copy()
+
+        if not network_thread_should_run:
+            print("Main Thread: Network thread signalled stop. Exiting loop.")
             break
 
-        frame_counter += 1
-        #frame_bgr = cv2.resize(frame_bgr, (640, 480))
+        if current_frame_for_processing is None:
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
+                print("Main Thread: 'q' pressed. Signalling network thread to stop.")
+                network_thread_should_run = False
+                break
+            if cv2.getWindowProperty(window_name, cv2.WND_PROP_VISIBLE) < 1 and processed_frame_counter_for_fps > 0:
+                print("Main Thread: Window closed. Signalling network thread to stop.")
+                network_thread_should_run = False
+                break
+            time.sleep(0.001)
+            continue
+
+        frame_bgr = current_frame_for_processing
+
+        # Increment frame counter for FPS calculation
+        processed_frame_counter_for_fps += 1
+
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+
+        if processed_frame_counter_for_fps % 60 == 1: # Print shape occasionally (frame 1, 61, 121...)
+            print(f"head_tracking.py: Processing frame - Shape: {frame_rgb.shape}")
+
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame_rgb)
 
         try:
@@ -143,22 +226,18 @@ def main():
             print(f"head_tracking.py: Error during landmarker.detect: {e}")
             continue
 
-        mouse_dx, mouse_dy = 0, 0
-        current_physical_yaw, current_physical_pitch = 0.0, 0.0 # For values used in control
+        mouse_dx, mouse_dy = 0.0, 0.0
+        current_physical_yaw, current_physical_pitch = 0.0, 0.0
 
         if detection_result.facial_transformation_matrixes:
             transformation_matrix = np.array(detection_result.facial_transformation_matrixes[0]).reshape(4,4)
             rotation_matrix = transformation_matrix[:3,:3]
-
-            # Get angles:
-            # current_physical_yaw is from function's "pitch" output (for L/R control)
-            # current_physical_pitch is now from function's "roll" output (testing for U/D control)
             current_physical_yaw, current_physical_pitch = rotation_matrix_to_identified_physical_angles(rotation_matrix)
 
-            if first_frame:
+            if first_frame_processed:
                 previous_physical_yaw = current_physical_yaw
                 previous_physical_pitch = current_physical_pitch
-                first_frame = False
+                first_frame_processed = False
             else:
                 delta_physical_yaw = current_physical_yaw - previous_physical_yaw
                 delta_physical_pitch = current_physical_pitch - previous_physical_pitch
@@ -168,13 +247,11 @@ def main():
                 if delta_physical_pitch > 180: delta_physical_pitch -= 360
                 if delta_physical_pitch < -180: delta_physical_pitch += 360
 
-                # Physical Head Yaw (L/R turn, from func_pitch) controls Horizontal Mouse (mouse_dx)
                 if abs(delta_physical_yaw) > DEAD_ZONE_DEGREES:
                     mouse_dx = -(delta_physical_yaw * SENSITIVITY_PHYSICAL_YAW)
                     if INVERT_HORIZONTAL_MOUSE:
                         mouse_dx = -mouse_dx
 
-                # Physical Head Pitch (U/D tilt, NOW from func_roll) controls Vertical Mouse (mouse_dy)
                 if abs(delta_physical_pitch) > DEAD_ZONE_DEGREES:
                     mouse_dy = delta_physical_pitch * SENSITIVITY_PHYSICAL_PITCH
                     if INVERT_VERTICAL_MOUSE:
@@ -202,16 +279,46 @@ def main():
                         landmark_drawing_spec=mp_drawing.DrawingSpec(color=(255,0,0), thickness=1, circle_radius=1),
                         connection_drawing_spec=mp_drawing.DrawingSpec(color=(0,255,0), thickness=1, circle_radius=1))
 
-        # Updated on-screen text
-        cv2.putText(frame_bgr, f"Phys Yaw (from FuncPitch -> Horiz): {current_physical_yaw:.1f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
-        cv2.putText(frame_bgr, f"Phys Pitch (from FuncRoll -> Vert): {current_physical_pitch:.1f}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
+        # --- FPS Calculation and Display ---
+        current_time = time.time()
+        elapsed_time = current_time - fps_start_time
+        if elapsed_time > fps_update_interval:
+            fps_display_val = processed_frame_counter_for_fps / elapsed_time
+            fps_start_time = current_time
+            processed_frame_counter_for_fps = 0 # Reset frame count for next interval
 
-        cv2.imshow("Head Rotation Mouse Control", frame_bgr)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            print("head_tracking.py: 'q' pressed by user. Exiting loop.")
+        cv2.putText(frame_bgr, f"FPS: {fps_display_val:.1f}", (frame_bgr.shape[1] - 100, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,0), 2)
+        # --- End FPS ---
+
+        cv2.putText(frame_bgr, f"Phys Yaw (FuncPitch -> Horiz): {current_physical_yaw:.1f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
+        cv2.putText(frame_bgr, f"Phys Pitch (FuncRoll -> Vert): {current_physical_pitch:.1f}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
+
+        cv2.imshow(window_name, frame_bgr)
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
+            print("Main Thread: 'q' pressed. Signalling network thread to stop.")
+            network_thread_should_run = False
+            break
+        # Check if window was closed by user using the 'X' button
+        # cv2.getWindowProperty returns -1 if window is destroyed.
+        # Check processed_frame_counter_for_fps > 0 to avoid exiting on first loop if window not up yet.
+        if cv2.getWindowProperty(window_name, cv2.WND_PROP_VISIBLE) < 1 and processed_frame_counter_for_fps > 0 :
+            print("Main Thread: Window closed by user. Signalling network thread to stop.")
+            network_thread_should_run = False
             break
 
+
     print("head_tracking.py: Exited main processing loop.")
+
+    network_thread_should_run = False
+    if receiver_thread.is_alive():
+        print("Main Thread: Waiting for network receiver thread to join...")
+        receiver_thread.join(timeout=1.5)
+        if receiver_thread.is_alive():
+            print("Main Thread: Network thread did not join in time.")
+    else:
+        print("Main Thread: Network thread already finished.")
+
     if landmarker:
         print("head_tracking.py: Closing landmarker...")
         landmarker.close()
@@ -219,7 +326,6 @@ def main():
     cv2.destroyAllWindows()
     client_socket.close()
     print("head_tracking.py: Application terminated cleanly.")
-    input("head_tracking.py: Press Enter to close this window...")
 
 if __name__ == '__main__':
     print("head_tracking.py: Script execution starting from __main__.")
