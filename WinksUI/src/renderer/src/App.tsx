@@ -16,7 +16,7 @@ function App(): React.JSX.Element {
         <Route path="/dashboard" element={<MainLayout onLogout={function (): void {
           throw new Error('Function not implemented.');
         } } />} />
-        <Route path="/quick-links" element={<QuickLinks />} />     
+        <Route path="/quick-links" element={<QuickLinks />} />
       </Routes>
     </Router>
   );

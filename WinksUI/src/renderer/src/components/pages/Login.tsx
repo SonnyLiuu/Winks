@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import './AuthPage.css'
+import {useNavigate} from "react-router-dom";
 
 export default function LoginPage({
   onSwitchToSignup,
@@ -10,10 +11,30 @@ export default function LoginPage({
   onGoBack: () => void
   onSwitchToForgotPassword: () => void
 }): React.JSX.Element {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [message, setMessage] = useState('')
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const cleanup = window.electron.on('login-response', (response: any) => {
+      if (response.success) {
+        setMessage('Login successful!')
+        // Ideally, store user session/token here
+        setTimeout(() => navigate('/dashboard'), 1000)
+      } else {
+        setMessage(`Error: ${response.message}`)
+      }
+    })
+    return () => {
+      if (cleanup) cleanup()
+    }
+  }, [navigate])
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault()
-    console.log('Login form submitted')
-    // todo add login logic
+    setMessage('Logging in...')
+    window.electron.send('login-user', { email, password })
   }
 
   return (
@@ -28,11 +49,25 @@ export default function LoginPage({
 
       <form onSubmit={handleSubmit}>
         <div className="auth-form-group">
-          <input type="email" placeholder="Enter your email" required className="auth-input" />
+          <input
+            type="email"
+            placeholder="Enter your email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="auth-input"
+          />
         </div>
 
         <div className="auth-form-group">
-          <input type="password" placeholder="Enter password" required className="auth-input" />
+          <input
+            type="password"
+            placeholder="Enter password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="auth-input"
+          />
         </div>
 
         <div style={{ textAlign: 'right', marginBottom: '20px' }}>
@@ -45,6 +80,15 @@ export default function LoginPage({
           Sign In
         </button>
       </form>
+
+      {message && (
+        <p
+          className="auth-text-center"
+          style={{ color: message.startsWith('Error') ? 'red' : 'green', marginTop: '15px' }}
+        >
+          {message}
+        </p>
+      )}
 
       <p className="auth-text-center">
         Don&#39;t have an account?{' '}

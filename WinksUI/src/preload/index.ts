@@ -2,7 +2,15 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI as baseElectronAPI } from '@electron-toolkit/preload'
 
 // Define channels you want to allow from the renderer
-const validSendChannels = ['open-overlay-get-click', 'get-cursor-position', 'move-cursor-and-scroll']
+const validSendChannels = [
+  'open-overlay-get-click',
+  'get-cursor-position',
+  'move-cursor-and-scroll',
+  'signup-user',
+  'login-user'
+]
+
+const validReceiveChannels = ['signup-response', 'login-response']
 
 // Extend the electron API with a custom `send` function
 const customAPI = {
@@ -11,6 +19,15 @@ const customAPI = {
     if (validSendChannels.includes(channel)) {
       ipcRenderer.send(channel, data)
     }
+  },
+  on: (channel: string, func: (...args: any[]) => void): (() => void) | undefined => {
+    if (validReceiveChannels.includes(channel)) {
+      // Deliberately strip event as it includes `sender`
+      const subscription = (_event: Electron.IpcRendererEvent, ...args: any[]) => func(...args)
+      ipcRenderer.on(channel, subscription)
+      return () => ipcRenderer.removeListener(channel, subscription)
+    }
+    return undefined;
   }
 }
 

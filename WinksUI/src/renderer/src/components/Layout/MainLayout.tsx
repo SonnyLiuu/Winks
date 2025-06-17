@@ -4,7 +4,7 @@ import Header from './Header';
 import './MainLayout.css';
 import AccountPage from '../pages/AccountPage';
 import SettingsPage from '../pages/SettingsPage';
-//import HomePage from '../pages/Homepage'; 
+//import HomePage from '../pages/Homepage';
 
 type Props = {
     onLogout: () => void;
@@ -12,7 +12,7 @@ type Props = {
 
   export default function MainLayout({ onLogout }: Props) {
     const [page, setPage] = useState<'account' | 'settings'>('account');
-  
+
     return (
       <div className="layout">
         <Navbar onSelect={setPage} onLogout={onLogout} />

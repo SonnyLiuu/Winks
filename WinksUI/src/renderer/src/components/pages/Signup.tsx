@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import './AuthPage.css'
+import { useNavigate } from 'react-router-dom'
 
 export default function SignupPage({
   onSwitchToLogin,
@@ -10,11 +11,31 @@ export default function SignupPage({
 }): React.JSX.Element {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [message, setMessage] = useState('')
+  const navigate = useNavigate()
+
+
+  useEffect(() => {
+    const cleanup = window.electron.on('signup-response', (response: any) => {
+      if (response.success) {
+        setMessage('Account created successfully! Please log in.')
+        setEmail('')
+        setPassword('')
+        setTimeout(() => navigate('/dashboard'))
+      } else {
+        setMessage(`Error: ${response.message}`)
+      }
+    })
+    return () => {
+      if (cleanup) cleanup()
+    }
+  }, [navigate])
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault()
     console.log('Signup form submitted:', { email, password })
-    // todo add signup logic
+    setMessage('Signing up...')
+    window.electron.send('signup-user', { email, password })
   }
 
   return (
@@ -54,6 +75,15 @@ export default function SignupPage({
           Sign Up
         </button>
       </form>
+
+      {message && (
+        <p
+          className="auth-text-center"
+          style={{ color: message.startsWith('Error') ? 'red' : 'green', marginTop: '15px' }}
+        >
+          {message}
+        </p>
+      )}
 
       <p className="auth-text-center">
         Have an account?{' '}
