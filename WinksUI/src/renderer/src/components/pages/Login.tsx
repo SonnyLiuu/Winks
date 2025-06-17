@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import './AuthPage.css'
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from 'react-router-dom'
+
+type LoginPageProps = {
+  onSwitchToSignup: () => void
+  onGoBack: () => void
+  onSwitchToForgotPassword: () => void
+  onLoginSuccess: () => void
+}
 
 export default function LoginPage({
   onSwitchToSignup,
   onGoBack,
-  onSwitchToForgotPassword
-}: {
-  onSwitchToSignup: () => void
-  onGoBack: () => void
-  onSwitchToForgotPassword: () => void
-}): React.JSX.Element {
+  onSwitchToForgotPassword,
+  onLoginSuccess
+}: LoginPageProps): React.JSX.Element {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
@@ -20,8 +24,8 @@ export default function LoginPage({
     const cleanup = window.electron.on('login-response', (response: any) => {
       if (response.success) {
         setMessage('Login successful!')
-        // Ideally, store user session/token here
-        setTimeout(() => navigate('/dashboard'), 1000)
+        onLoginSuccess()
+        navigate('/dashboard')
       } else {
         setMessage(`Error: ${response.message}`)
       }
@@ -29,7 +33,7 @@ export default function LoginPage({
     return () => {
       if (cleanup) cleanup()
     }
-  }, [navigate])
+  }, [navigate, onLoginSuccess])
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault()

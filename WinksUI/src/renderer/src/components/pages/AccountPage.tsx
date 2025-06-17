@@ -1,14 +1,22 @@
-import React, { useState } from 'react';
-import LoginPage from './Login';
-import SignupPage from './Signup';
-import ForgotPasswordPage from './ForgotPasswordPage';
+import React, { useState } from 'react'
+import LoginPage from './Login'
+import SignupPage from './Signup'
+import ForgotPasswordPage from './ForgotPasswordPage'
 
-export default function AccountPage(): React.JSX.Element {
-  const [currentView, setCurrentView] = useState<'initial' | 'login' | 'signup' | 'forgotPassword'>('initial');
+type AccountPageProps = {
+  onLoginSuccess: () => void
+  onSignupSuccess: () => void
+}
 
-  const handleGoBack = () => setCurrentView('initial');
-  const handleSwitchToForgotPassword = () => setCurrentView('forgotPassword');
-  const handleGoBackToLogin = () => setCurrentView('login');
+export default function AccountPage({
+  onLoginSuccess,
+  onSignupSuccess
+}: AccountPageProps): React.JSX.Element {
+  const [currentView, setCurrentView] = useState<'initial' | 'login' | 'signup' | 'forgotPassword'>('initial')
+
+  const handleGoBack = () => setCurrentView('initial')
+  const handleSwitchToForgotPassword = () => setCurrentView('forgotPassword')
+  const handleGoBackToLogin = () => setCurrentView('login')
 
   if (currentView === 'login') {
     return (
@@ -16,8 +24,9 @@ export default function AccountPage(): React.JSX.Element {
         onSwitchToSignup={() => setCurrentView('signup')}
         onGoBack={handleGoBack}
         onSwitchToForgotPassword={handleSwitchToForgotPassword}
+        onLoginSuccess={onLoginSuccess}
       />
-    );
+    )
   }
 
   if (currentView === 'signup') {
@@ -25,12 +34,13 @@ export default function AccountPage(): React.JSX.Element {
       <SignupPage
         onSwitchToLogin={() => setCurrentView('login')}
         onGoBack={handleGoBack}
+        onSignupSuccess={onSignupSuccess}
       />
-    );
+    )
   }
 
   if (currentView === 'forgotPassword') {
-    return <ForgotPasswordPage onGoBackToLogin={handleGoBackToLogin} />;
+    return <ForgotPasswordPage onGoBackToLogin={handleGoBackToLogin} />
   }
 
   return (
@@ -39,7 +49,7 @@ export default function AccountPage(): React.JSX.Element {
       <p style={subtextStyle}>
         Don’t have an account?
         <br />
-        That’s perfectly fine.
+        That&#39;s perfectly fine.
       </p>
       <p style={infoStyle}>
         Creating an account allows you to save your settings and sync them across multiple devices.
@@ -54,7 +64,7 @@ export default function AccountPage(): React.JSX.Element {
         </button>
       </div>
     </div>
-  );
+  )
 }
 
 //  Style Objects
@@ -67,34 +77,34 @@ const containerStyle: React.CSSProperties = {
   backgroundColor: '#ffffff',
   borderRadius: '16px',
   boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-  fontFamily: 'Poppins, sans-serif',
-};
+  fontFamily: 'Poppins, sans-serif'
+}
 
 const headingStyle: React.CSSProperties = {
   fontWeight: 700,
   fontSize: '32px',
-  marginBottom: '16px',
-};
+  marginBottom: '16px'
+}
 
 const subtextStyle: React.CSSProperties = {
   fontSize: '16px',
   color: '#555',
-  marginBottom: '8px',
-};
+  marginBottom: '8px'
+}
 
 const infoStyle: React.CSSProperties = {
   fontSize: '14px',
   color: '#777',
   maxWidth: '360px',
   margin: '0 auto 40px',
-  lineHeight: '1.6',
-};
+  lineHeight: '1.6'
+}
 
 const buttonGroupStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'center',
-  gap: '20px',
-};
+  gap: '20px'
+}
 
 const baseButtonStyle: React.CSSProperties = {
   padding: '12px 30px',
@@ -103,18 +113,18 @@ const baseButtonStyle: React.CSSProperties = {
   fontSize: '16px',
   fontWeight: 600,
   cursor: 'pointer',
-  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-};
+  transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+}
 
 const signupBtnStyle: React.CSSProperties = {
   ...baseButtonStyle,
   background: 'rgb(110, 210, 237)',
   color: '#fff',
-  boxShadow: '0 4px 12px rgba(0, 114, 255, 0.3)',
-};
+  boxShadow: '0 4px 12px rgba(0, 114, 255, 0.3)'
+}
 
 const loginBtnStyle: React.CSSProperties = {
   ...baseButtonStyle,
   background: '#e0e0e0',
-  color: '#333',
-};
+  color: '#333'
+}

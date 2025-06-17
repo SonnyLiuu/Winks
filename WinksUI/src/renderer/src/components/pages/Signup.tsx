@@ -2,18 +2,21 @@ import React, { useState, useEffect } from 'react'
 import './AuthPage.css'
 import { useNavigate } from 'react-router-dom'
 
-export default function SignupPage({
-  onSwitchToLogin,
-  onGoBack
-}: {
+type SignupPageProps = {
   onSwitchToLogin: () => void
   onGoBack: () => void
-}): React.JSX.Element {
+  onSignupSuccess: () => void
+}
+
+export default function SignupPage({
+  onSwitchToLogin,
+  onGoBack,
+  onSignupSuccess
+}: SignupPageProps): React.JSX.Element {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
   const navigate = useNavigate()
-
 
   useEffect(() => {
     const cleanup = window.electron.on('signup-response', (response: any) => {
@@ -21,7 +24,8 @@ export default function SignupPage({
         setMessage('Account created successfully! Please log in.')
         setEmail('')
         setPassword('')
-        setTimeout(() => navigate('/dashboard'))
+        onSignupSuccess()
+        navigate('/dashboard')
       } else {
         setMessage(`Error: ${response.message}`)
       }
@@ -29,7 +33,7 @@ export default function SignupPage({
     return () => {
       if (cleanup) cleanup()
     }
-  }, [navigate])
+  }, [navigate, onSignupSuccess])
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault()
