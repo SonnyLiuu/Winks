@@ -1,9 +1,8 @@
-import {app, BrowserWindow, ipcMain} from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
-
-import {createMainWindow, createOverlayWindow} from './windows'
+import { createMainWindow, createOverlayWindow } from './windows'
 import { createOverlayGetClick } from './overlayGetClick'
-import {overlayScroll, saveCursorPosition} from './overlay'
+import { openOnScreenKeyboard, overlayScroll, saveCursorPosition } from './overlay'
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
 
@@ -30,21 +29,28 @@ app.on('window-all-closed', () => {
 
 //region overlay functions
 
-ipcMain.on('open-overlay-get-click', () => {
-  createOverlayGetClick()
-})
-
-ipcMain.on('get-cursor-position', () => {
-  saveCursorPosition()
+ipcMain.on('get-cursor-position', (_event, arg) => {
+  saveCursorPosition(arg)
 })
 
 ipcMain.on('move-cursor-and-scroll', (_event, arg) => {
   if (arg === 'up') {
-    overlayScroll(false, 1);  // Scroll up
+    overlayScroll(false, 1) // Scroll up
   } else if (arg === 'down') {
-    overlayScroll(false, -1);  // Scroll down
+    overlayScroll(false, -1) // Scroll down
+  } else if (arg === 'right') {
+    overlayScroll(true, -1)
+  } else if (arg === 'left') {
+    overlayScroll(true, 1)
   }
 })
 
+ipcMain.on('overlay-get-click', (_event, arg) => {
+  createOverlayGetClick(arg)
+})
+
+ipcMain.on('keyboard', () => {
+  openOnScreenKeyboard()
+})
 
 //endregion overlay functions
