@@ -38,14 +38,13 @@ export function createMainWindow(): void {
 }
 
 export function createOverlayWindow(): void {
-
-  const height  = screen.getPrimaryDisplay().workAreaSize.height
-  const windowWidth = 400
-  const windowHeight = 300
+  const height = screen.getPrimaryDisplay().workAreaSize.height
+  const windowWidth = 360
+  const windowHeight = 360
 
   // Calculate bottom-right position
   const x = 0
-  const y = height-windowHeight
+  const y = height - windowHeight
 
   overlayWindow = new BrowserWindow({
     width: windowWidth,
@@ -63,6 +62,7 @@ export function createOverlayWindow(): void {
       sandbox: false
     }
   })
+  overlayWindow.webContents.openDevTools({ mode: 'detach' })
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     overlayWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/Overlay.html`)
   } else {
