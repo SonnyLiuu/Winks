@@ -4,7 +4,7 @@ import { is } from '@electron-toolkit/utils'
 
 export let overlayGetClick: BrowserWindow | null = null
 
-export function createOverlayGetClick(): void {
+export function createOverlayGetClick(coordinateType: string): void {
   if (overlayGetClick) {
     overlayGetClick.focus()
     return
@@ -28,6 +28,7 @@ export function createOverlayGetClick(): void {
       sandbox: false
     }
   })
+  overlayGetClick.setAlwaysOnTop(true, 'screen-saver')
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     overlayGetClick.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/OverlayGetClick.html`)
@@ -35,8 +36,14 @@ export function createOverlayGetClick(): void {
     overlayGetClick.loadFile(join(__dirname, '../renderer/OverlayGetClick.html'))
   }
 
-  overlayGetClick.focus()
+  overlayGetClick.on('ready-to-show', () => {
+    if (overlayGetClick) {
+      overlayGetClick.webContents.send('set-coordinate-type', coordinateType)
+    }
+  })
 
+  overlayGetClick.focus()
+  overlayGetClick.webContents.openDevTools({ mode: 'detach' })
   overlayGetClick.on('closed', () => {
     overlayGetClick = null
   })
@@ -48,5 +55,3 @@ export function closeOverlayGetClick(): void {
     overlayGetClick = null
   }
 }
-
-
