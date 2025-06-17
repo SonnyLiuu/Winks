@@ -19,3 +19,13 @@
   cursor: crosshair;
   z-index: 9999; /* Make sure it's on top */
 }
+
+.circleMenuContainer {
+  position: absolute;
+  top: 50%;
+  right: 50%;
+}
+
+.invisible {
+  display: none !important;
+}

@@ -32,6 +32,20 @@ code {
   margin-bottom: 80px;
 }
 
+
+:root {
+  --__reactRadialMenu__rotate: 45deg;
+}
+
+.__rrm-menu {
+  rotate: var(--__reactRadialMenu__rotate);
+}
+
+.__rrm-content {
+  rotate: calc(-1 * var(--__reactRadialMenu__rotate));
+}
+
+
 .logo {
   margin-bottom: 20px;
   -webkit-user-drag: none;
