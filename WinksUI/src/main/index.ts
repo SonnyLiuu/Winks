@@ -57,7 +57,7 @@ app.whenReady().then(() => {
   });
 
   // --- Python Script Spawning (ONLY ONCE on app.ready) ---
-  const pythonExecutable = 'C:\\Users\\joshu\\AppData\\Local\\Programs\\Python\\Python310\\python.exe'; // <--- PASTE YOUR ABSOLUTE PATH HERE
+  const pythonExecutable = 'python';
   // Example for macOS/Linux: const pythonExecutable = '/usr/bin/python3';
   // Example for macOS/Linux (Homebrew): const pythonExecutable = '/opt/homebrew/bin/python3.10';
 
