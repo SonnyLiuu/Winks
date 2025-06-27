@@ -3,7 +3,7 @@ import { electronAPI as baseElectronAPI } from '@electron-toolkit/preload'
 
 // Define channels you want to allow from the renderer
 const validSendChannels = [
-  'open-overlay-get-click',
+  'overlay-get-click',
   'get-cursor-position',
   'move-cursor-and-scroll',
   'keyboard',
