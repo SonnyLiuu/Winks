@@ -1,6 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI as baseElectronAPI } from '@electron-toolkit/preload'
 
+// --- Type-safe definition for the API exposed to the renderer process ---
+export interface IElectronAPI {
+  // Functions for Python Backend Communication
+  updateSensitivities: (yaw: number, pitch: number) => Promise<{ success: boolean; error?: string }>;
+  updateCalibration: (calibrationData: any) => Promise<{ success: boolean; error?: string }>;
+}
+
 // Define channels you want to allow from the renderer
 const validSendChannels = [
   'overlay-get-click',
@@ -16,6 +23,16 @@ const validReceiveChannels = [
   'signup-response',
   'login-response'
 ]
+
+// --- Expose protected methods that allow the renderer process to IPC ---
+// This is the secure way to allow your UI to talk to the main process.
+const api: IElectronAPI = {
+  // Python settings handlers
+  updateSensitivities: (yaw: number, pitch: number) => 
+    ipcRenderer.invoke('update-sensitivities', yaw, pitch),
+  updateCalibration: (calibrationData: any) => 
+    ipcRenderer.invoke('update-calibration', calibrationData)
+}
 
 // Extend the electron API with a custom `send` function
 const customAPI = {
@@ -40,8 +57,6 @@ const customAPI = {
   }
 }
 
-// You can expose more APIs if needed
-const api = {}
 
 // Safely expose APIs to the renderer process
 if (process.contextIsolated) {

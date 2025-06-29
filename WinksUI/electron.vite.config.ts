@@ -15,6 +15,19 @@ export default defineConfig({
         '@renderer': resolve('src/renderer/src')
       }
     },
-    plugins: [react()]
+    plugins: [react()],
+    build: {
+      rollupOptions: {
+        input: {
+          // Defines your main window's entry point
+          main: resolve(__dirname, 'src/renderer/index.html'),
+          // Defines your overlay window's entry point
+          overlay: resolve(__dirname, 'src/renderer/Overlay.html'),
+          // Defines the entry point for the "get click" overlay
+          overlayGetClick: resolve(__dirname, 'src/renderer/OverlayGetClick.html')
+        }
+      },
+      outDir: 'out/renderer'
+    }
   }
 })

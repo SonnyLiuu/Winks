@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE HTML>
 <html>
   
   <head>
@@ -6,8 +6,14 @@
     <title>Electron</title>
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+      http-equiv="Content-Security-Policy" 
+      content="
+        default-src 'self';
+        script-src 'self';
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com/;
+        img-src 'self' data: https://cdn.icon-icons.com/ https://images.icon-icons.com/;
+        font-src 'self' https://fonts.gstatic.com/;"
+         >
     />
   </head>
 

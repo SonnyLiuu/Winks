@@ -43,7 +43,7 @@ export function createOverlayGetClick(coordinateType: string): void {
   })
 
   overlayGetClick.focus()
-  overlayGetClick.webContents.openDevTools({ mode: 'detach' })
+  //overlayGetClick.webContents.openDevTools({ mode: 'detach' })
   overlayGetClick.on('closed', () => {
     overlayGetClick = null
   })
