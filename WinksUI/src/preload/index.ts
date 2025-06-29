@@ -13,7 +13,11 @@ const validSendChannels = [
   'add-programs',
   'get-library',
   'launch-program',
-  'remove-programs'
+  'remove-programs',
+  'cancel-scan',
+  'fetch-website-info',
+  'add-website',
+  'launch-website'
 ]
 const validReceiveChannels = [
   'set-coordinate-type',
@@ -22,7 +26,8 @@ const validReceiveChannels = [
   'login-response',
   'program-found',
   'scan-complete',
-  'library-updated'
+  'library-updated',
+  'website-info-reply'
 ]
 
 // Extend the electron API with a custom `send` function

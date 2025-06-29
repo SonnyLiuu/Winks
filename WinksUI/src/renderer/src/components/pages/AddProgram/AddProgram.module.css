@@ -1,20 +1,26 @@
 /* Main container for the new page */
 .add-program-container {
-  padding: 40px;
   max-width: 1400px;
   margin: 0 auto;
   font-family: 'Poppins', sans-serif;
-  background-color: #f8f9fa; /* A slightly different background */
+  background-color: #f8f9fa;
   border-radius: 20px;
+  height: 90vh;
+
+  /* --- FIX FOR STICKY FOOTER --- */
+  display: flex;
+  flex-direction: column;
+  /* Padding will be on inner elements to allow footer to span the full width */
+  padding: 0 40px;
 
   /* --- FIX FOR SCROLLING --- */
-  height: 90vh; /* Set a fixed height */
-  overflow-y: auto; /* Add a vertical scrollbar only when needed */
+  overflow-y: auto; /* This makes the container scrollable when its content overflows */
 }
 
 .add-program-header {
   text-align: left;
   margin-bottom: 20px;
+  padding-top: 40px; /* Moved padding here */
 }
 
 .add-program-header h3 {
@@ -23,16 +29,26 @@
   font-weight: 600;
 }
 
-/* --- UPDATED: Changed from Grid to Flexbox --- */
-.tiles-grid {
+/* Added style for the loading message container */
+.loading-container {
   display: flex;
-  justify-content: flex-start; /* Aligns items to the left */
-  flex-wrap: wrap; /* Allows items to wrap to the next line */
-  gap: 30px;
-  margin-bottom: 40px;
+  justify-content: center;
+  align-items: center;
+  color: #6c757d;
+  font-size: 1.2rem;
+  flex-grow: 1; /* Ensures it's centered vertically in the available space */
 }
 
-/* --- COMPLETE STYLES FOR THE TILE ITSELF --- */
+.tiles-grid {
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 30px;
+  margin-bottom: 40px;
+  /* This makes the grid take up available space, pushing the footer down */
+  flex-grow: 1;
+}
+
 .program-tile {
   background: white;
   border-radius: 18px;
@@ -45,14 +61,13 @@
   box-shadow: 0 8px 15px rgba(0, 0, 0, 0.06);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
   border: 2px solid transparent;
-  width: 180px; /* Set a fixed width for flex items */
+  width: 180px;
   height: 180px;
   position: relative;
   overflow: hidden;
   cursor: pointer;
 }
 
-/* --- Styles for tile contents --- */
 .tile-icon {
   width: 70px;
   height: 70px;
@@ -98,13 +113,19 @@
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* --- Action Buttons at the bottom --- */
+/* --- UPDATED: Action Buttons at the bottom --- */
 .add-program-actions {
   display: flex;
   justify-content: flex-end;
   gap: 20px;
-  padding-top: 20px;
+
+  /* --- FIX: Styles for the sticky footer --- */
+  position: sticky;
+  bottom: 0;
+  padding: 20px 0;
+  background-color: #f8f9fa; /* Match parent background */
   border-top: 1px solid #dee2e6;
+  box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.05); /* Add shadow for depth */
 }
 
 .add-program-actions button {
@@ -142,11 +163,11 @@
   box-shadow: 0 12px 30px rgba(33, 136, 56, 0.4);
 }
 
-.add-button:disabled {
+.add-button:disabled,
+.cancel-button:disabled {
   background: linear-gradient(135deg, #e9ecef, #ced4da);
   color: #6c757d;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
-

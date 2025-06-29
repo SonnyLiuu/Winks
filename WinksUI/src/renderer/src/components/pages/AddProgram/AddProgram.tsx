@@ -20,14 +20,10 @@ export default function AddProgram() {
     setPrograms([])
     setIsLoading(true)
 
-    // --- UPDATED: This function now sorts the list on every update ---
     const handleProgramFound = (program: Program) => {
       setPrograms((prevPrograms) => {
-        // 1. Add the new program to a copy of the list
         const updatedList = [...prevPrograms, program]
-        // 2. Sort the entire list alphabetically
         updatedList.sort((a, b) => a.name.localeCompare(b.name))
-        // 3. Return the new, sorted list to update the state
         return updatedList
       })
     }
@@ -88,12 +84,18 @@ export default function AddProgram() {
       </div>
 
       <div className={styles['add-program-actions']}>
-        <button className={styles['cancel-button']} onClick={() => navigate(-1)}>
+        {/* FIX: The 'disabled' attribute is now tied to the isLoading state */}
+        <button
+          className={styles['cancel-button']}
+          onClick={() => navigate(-1)}
+          disabled={isLoading}
+        >
           Cancel
         </button>
+        {/* FIX: The 'disabled' attribute now checks for loading OR if no items are selected */}
         <button
           className={styles['add-button']}
-          disabled={selectedProgramIds.size === 0}
+          disabled={isLoading || selectedProgramIds.size === 0}
           onClick={handleAddPrograms}
         >
           Add {selectedProgramIds.size || ''} Selected

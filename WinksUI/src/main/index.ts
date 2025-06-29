@@ -7,6 +7,8 @@ import { createOverlayGetClick } from './overlayGetClick'
 import { openOnScreenKeyboard, overlayScroll, saveCursorPosition } from './overlay'
 import { connectToDatabase, createUser, verifyUser } from './database'
 import { scanRegistry } from './OSProgramScanning'
+import { session } from 'electron'
+import { JSDOM } from 'jsdom'
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
@@ -44,6 +46,107 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
+
+//region website adding
+
+ipcMain.on('fetch-website-info', async (event, url) => {
+  let fullUrl = url
+  if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+    fullUrl = `https://${fullUrl}`
+  }
+
+  try {
+    // Add a standard User-Agent header to the request
+    const response = await session.defaultSession.fetch(fullUrl, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+      }
+    })
+
+    const html = await response.text()
+    const dom = new JSDOM(html)
+    const doc = dom.window.document
+
+    const title = doc.querySelector('title')?.textContent || ''
+
+    const iconSelectors = [
+      "link[rel='apple-touch-icon']",
+      "link[rel='icon']",
+      "link[rel='shortcut icon']"
+    ]
+
+    let bestIcon = ''
+    for (const selector of iconSelectors) {
+      const iconHref = doc.querySelector(selector)?.getAttribute('href')
+      if (iconHref) {
+        bestIcon = iconHref
+        break
+      }
+    }
+
+    if (bestIcon) {
+      bestIcon = new URL(bestIcon, fullUrl).href
+    } else {
+      // FIX: Corrected the template literal syntax
+      bestIcon = `https://www.google.com/s2/favicons?sz=64&domain_url=${fullUrl}`
+    }
+
+    console.log(bestIcon)
+    event.sender.send('website-info-reply', { name: title, icon: bestIcon })
+  } catch (error) {
+    console.error('Failed to fetch website info:', error)
+    event.sender.send('website-info-reply', null)
+  }
+})
+
+ipcMain.on('add-website', (_event, websiteData) => {
+  const libraryFilePath = getLibraryFilePath()
+  try {
+    let library = []
+    if (fs.existsSync(libraryFilePath)) {
+      library = JSON.parse(fs.readFileSync(libraryFilePath, 'utf-8'))
+    }
+
+    const alreadyExists = library.some((item) => item.path === websiteData.url)
+    if (alreadyExists) {
+      console.log('Website already exists in library.')
+      return
+    }
+
+    const newWebsite = {
+      id: Date.now(),
+      type: 'website',
+      name: websiteData.name,
+      path: websiteData.url,
+      icon: websiteData.icon
+    }
+
+    const updatedLibrary = [...library, newWebsite]
+    fs.writeFileSync(libraryFilePath, JSON.stringify(updatedLibrary, null, 2))
+    console.log('Website added successfully.')
+  } catch (error) {
+    console.error('Failed to add website:', error)
+  }
+})
+
+ipcMain.on('launch-website', async (_event, url) => {
+  let fullUrl = url
+  // Check if the URL has a protocol, if not, prepend https://
+  if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+    fullUrl = `https://${fullUrl}`
+  }
+
+  console.log(`Attempting to launch website: ${fullUrl}`)
+  try {
+    // shell.openExternal is the safe and correct way to open web links
+    await shell.openExternal(fullUrl)
+  } catch (e) {
+    console.error('Error launching website:', e)
+  }
+})
+
+//endregion website adding
 
 //region program adding
 

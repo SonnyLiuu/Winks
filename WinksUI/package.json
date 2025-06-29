@@ -26,6 +26,7 @@
     "@spaceymonk/react-radial-menu": "^2.0.6",
     "bcryptjs": "^3.0.2",
     "electron-updater": "^6.3.9",
+    "jsdom": "^26.1.0",
     "mongodb": "^6.17.0",
     "react-router-dom": "^7.6.2",
     "winreg": "^1.2.5"

@@ -1,50 +1,79 @@
-// QuickLinks.tsx
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './QuickLinks.css'
-import googleIcon from '../../images/google.png'
-import youtubeIcon from '../../images/youtube.png'
-import mainIcon from '../../images/main.png'
-import { useEffect, useState } from 'react'
-
-/*const apps = [
-  { name: 'Google', icon: googleIcon, url: 'https://www.google.com' },
-  { name: 'YouTube', icon: youtubeIcon, url: 'https://www.youtube.com' },
-  { name: 'Gmail', icon: mainIcon, url: 'https://mail.google.com' }
-]
-*/
 
 interface Program {
   id: number
   name: string
   icon: string
-  path: string // The path to the executable
+  path: string
+  type: 'program' | 'website' // Helps distinguish items
+}
+
+interface WebsiteInfo {
+  name: string
+  icon: string
 }
 
 export default function QuickLinks() {
   const navigate = useNavigate()
   const [apps, setApps] = useState<Program[]>([])
-
-  // --- NEW: State for managing remove mode ---
   const [isSelectMode, setIsSelectMode] = useState(false)
   const [selectedToRemove, setSelectedToRemove] = useState(new Set<number>())
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [newUrl, setNewUrl] = useState('')
+  const [newName, setNewName] = useState('')
+  const [newIcon, setNewIcon] = useState('')
+  const [isFetching, setIsFetching] = useState(false)
 
+  // Effect to load the library on component mount
   useEffect(() => {
     const handleLibraryUpdate = (library: Program[]) => {
       setApps(library)
     }
     const unsubscribe = window.electron.on('library-updated', handleLibraryUpdate)
-
-    // Request the library from the main process on load
     window.electron.send('get-library')
-
     return () => {
       if (unsubscribe) unsubscribe()
     }
   }, [])
 
+  // Effect to handle fetching website info when the modal is open
+  useEffect(() => {
+    if (isModalOpen) {
+      const handleWebsiteInfo = (info: WebsiteInfo | null) => {
+        if (info) {
+          setNewName(info.name)
+          setNewIcon(info.icon)
+        }
+        setIsFetching(false)
+      }
+      const unsubscribe = window.electron.on('website-info-reply', handleWebsiteInfo)
+      return () => {
+        if (unsubscribe) unsubscribe()
+      }
+    }
+  }, [isModalOpen])
+
+  const handleUrlBlur = () => {
+    setIsFetching(true)
+    setNewName('Fetching...')
+    window.electron.send('fetch-website-info', newUrl)
+  }
+
+  const handleSaveWebsite = () => {
+    if (newUrl && newName) {
+      window.electron.send('add-website', { url: newUrl, name: newName, icon: newIcon })
+      setIsModalOpen(false)
+      setNewUrl('')
+      setNewName('')
+      setNewIcon('')
+      setTimeout(() => window.electron.send('get-library'), 200)
+    }
+  }
+
   const handleTileClick = (app: Program) => {
     if (isSelectMode) {
-      // If in select mode, toggle selection for deletion
       const newSelected = new Set(selectedToRemove)
       if (newSelected.has(app.id)) {
         newSelected.delete(app.id)
@@ -53,33 +82,72 @@ export default function QuickLinks() {
       }
       setSelectedToRemove(newSelected)
     } else {
-      // Otherwise, launch the program
-      window.electron.send('launch-program', app.path)
+      // --- UPDATED LOGIC ---
+      // Check the type and send to the appropriate channel
+      if (app.type === 'website') {
+        window.electron.send('launch-website', app.path)
+      } else {
+        window.electron.send('launch-program', app.path)
+      }
     }
   }
 
   const handleRemoveSelected = () => {
-    // Send the IDs of the selected programs to the main process
     window.electron.send('remove-programs', Array.from(selectedToRemove))
-
-    // Reset the selection state and exit select mode
     setSelectedToRemove(new Set())
     setIsSelectMode(false)
-
-    // Refresh the library from the main process
-    setTimeout(() => window.electron.send('get-library'), 100)
+    setTimeout(() => window.electron.send('get-library'), 200)
   }
 
   const toggleSelectMode = () => {
-    // When toggling, always clear previous selections
     setSelectedToRemove(new Set())
     setIsSelectMode(!isSelectMode)
   }
 
   return (
     <div className="quick-links-container">
+      {isModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Add Website Shortcut</h3>
+            <div className="form-group">
+              <label htmlFor="url">Website URL</label>
+              <input
+                type="text"
+                id="url"
+                value={newUrl}
+                onChange={(e) => setNewUrl(e.target.value)}
+                onBlur={handleUrlBlur}
+                placeholder="e.g., https://www.youtube.com"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="name">Shortcut Name</label>
+              <input
+                type="text"
+                id="name"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="e.g., YouTube"
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="modal-cancel-button" onClick={() => setIsModalOpen(false)}>
+                Cancel
+              </button>
+              <button
+                className="modal-save-button"
+                onClick={handleSaveWebsite}
+                disabled={isFetching || !newUrl || !newName}
+              >
+                {isFetching ? 'Fetching...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="top-buttons-container">
-        {/* The buttons now change based on whether you are in select mode */}
         {isSelectMode ? (
           <>
             <button
@@ -95,8 +163,11 @@ export default function QuickLinks() {
           </>
         ) : (
           <>
+            <button onClick={() => setIsModalOpen(true)} className="add-website-button">
+              Add Website
+            </button>
             <button onClick={() => navigate('/add-program')} className="add-program-button">
-              Add a Program
+              Add Program
             </button>
             <button onClick={toggleSelectMode} className="select-button">
               Select
@@ -112,7 +183,6 @@ export default function QuickLinks() {
       <div className="tiles-grid">
         {apps.map((app) => {
           const isSelected = selectedToRemove.has(app.id)
-          // Add 'selected' class if the tile is selected for deletion
           const tileClassName = `tile ${isSelectMode ? 'selectable' : ''} ${isSelected ? 'selected' : ''}`
 
           return (
@@ -122,7 +192,14 @@ export default function QuickLinks() {
                   <span className="checkmark">✔</span>
                 </div>
               )}
-              <img src={app.icon} alt={app.name} className="tile-icon" />
+              <img
+                src={app.icon}
+                alt={app.name}
+                className="tile-icon"
+                onError={(e) => {
+                  e.currentTarget.src = 'https://placehold.co/90x90/f0f4ff/2c3e50?text=Icon'
+                }}
+              />
               <span className="tile-label">{app.name}</span>
             </div>
           )
