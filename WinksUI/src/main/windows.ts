@@ -32,10 +32,10 @@ export function createMainWindow(): void {
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    mainWindow.webContents.openDevTools({ mode: 'detach' })
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
-  mainWindow.webContents.openDevTools({ mode: 'detach' })
 }
 
 export function createOverlayWindow(): void {
@@ -63,8 +63,8 @@ export function createOverlayWindow(): void {
       sandbox: false
     }
   })
-  overlayWindow.webContents.openDevTools({ mode: 'detach' })
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    overlayWindow.webContents.openDevTools({ mode: 'detach' })
     overlayWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/Overlay.html`)
   } else {
     overlayWindow.loadFile(join(__dirname, '../renderer/Overlay.html'))

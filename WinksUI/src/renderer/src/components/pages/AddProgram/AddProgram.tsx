@@ -16,33 +16,35 @@ export default function AddProgram() {
   const [selectedProgramIds, setSelectedProgramIds] = useState(new Set<number>())
   const [isLoading, setIsLoading] = useState(true)
 
-  // --- FIX: Restoring the complete useEffect hook ---
   useEffect(() => {
-    // Reset state on component mount
     setPrograms([])
     setIsLoading(true)
 
-    // Set up the listener for when a program is found
+    // --- UPDATED: This function now sorts the list on every update ---
     const handleProgramFound = (program: Program) => {
-      setPrograms((prevPrograms) => [...prevPrograms, program])
+      setPrograms((prevPrograms) => {
+        // 1. Add the new program to a copy of the list
+        const updatedList = [...prevPrograms, program]
+        // 2. Sort the entire list alphabetically
+        updatedList.sort((a, b) => a.name.localeCompare(b.name))
+        // 3. Return the new, sorted list to update the state
+        return updatedList
+      })
     }
     const unsubscribeProgramFound = window.electron.on('program-found', handleProgramFound)
 
-    // Set up the listener for when the scan is finished
     const handleScanComplete = () => {
       setIsLoading(false)
     }
     const unsubscribeScanComplete = window.electron.on('scan-complete', handleScanComplete)
 
-    // Send the message to the main process to start scanning
     window.electron.send('scan-for-programs')
 
-    // Cleanup function: This runs when the component unmounts
     return () => {
       if (unsubscribeProgramFound) unsubscribeProgramFound()
       if (unsubscribeScanComplete) unsubscribeScanComplete()
     }
-  }, []) // The empty array ensures this runs only once on mount
+  }, [])
 
   const handleProgramSelect = (programId: number) => {
     const newSelectedIds = new Set(selectedProgramIds)

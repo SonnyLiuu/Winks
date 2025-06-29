@@ -6,6 +6,7 @@ import { createMainWindow, createOverlayWindow } from './windows'
 import { createOverlayGetClick } from './overlayGetClick'
 import { openOnScreenKeyboard, overlayScroll, saveCursorPosition } from './overlay'
 import { connectToDatabase, createUser, verifyUser } from './database'
+import { scanRegistry } from './OSProgramScanning'
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
@@ -54,15 +55,38 @@ const getLibraryFilePath = () => {
 // Listener for adding new programs to the library
 ipcMain.on('add-programs', (_event, programsToAdd) => {
   const libraryFilePath = getLibraryFilePath()
-  console.log(`Saving ${programsToAdd.length} programs to: ${libraryFilePath}`)
+  console.log(`Received request to add ${programsToAdd.length} programs.`)
+
   try {
-    let library = []
+    let existingLibrary = []
     if (fs.existsSync(libraryFilePath)) {
-      library = JSON.parse(fs.readFileSync(libraryFilePath, 'utf-8'))
+      try {
+        existingLibrary = JSON.parse(fs.readFileSync(libraryFilePath, 'utf-8'))
+      } catch {
+        console.error('Could not parse library.json, starting fresh.')
+        existingLibrary = []
+      }
     }
-    const updatedLibrary = [...library, ...programsToAdd]
+
+    // 1. Create a Set of all existing program paths for a quick lookup.
+    const existingPaths = new Set(existingLibrary.map((p) => p.path))
+
+    // 2. Filter the incoming programs to keep only the ones not already in the library.
+    const newPrograms = programsToAdd.filter((program) => !existingPaths.has(program.path))
+
+    if (newPrograms.length === 0) {
+      console.log('No new programs to add. All selected programs already exist in the library.')
+      return
+    }
+
+    console.log(`Adding ${newPrograms.length} new unique programs.`)
+
+    // 3. Combine the old library with the new, unique programs.
+    const updatedLibrary = [...existingLibrary, ...newPrograms]
+
+    // 4. Write the updated library back to the file.
     fs.writeFileSync(libraryFilePath, JSON.stringify(updatedLibrary, null, 2))
-    console.log('Library saved successfully.')
+    console.log('Library saved successfully with new programs.')
   } catch (error) {
     console.error('Failed to save library:', error)
   }
@@ -99,106 +123,51 @@ ipcMain.on('launch-program', async (_event, programPath) => {
 })
 
 let isScanning = false
-ipcMain.on('scan-for-programs', (event) => {
+ipcMain.on('scan-for-programs', async (event) => {
   if (isScanning) {
     console.log('Scan request ignored, another scan is already in progress.')
     return
   }
   isScanning = true
-  console.log('Main process received "scan-for-programs" request.')
+  console.log('Main process received "scan-for-programs" request. Starting registry scan.')
 
-  const mockPrograms = [
-    {
-      id: 1,
-      name: 'VS Code',
-      icon: 'https://cdn.icon-icons.com/icons2/2107/PNG/512/file_type_vscode_icon_130084.png',
-      path: 'C:\\Program Files\\VS Code\\code.exe'
-    },
-    {
-      id: 2,
-      name: 'Steam',
-      icon: 'https://cdn.icon-icons.com/icons2/2108/PNG/512/steam_icon_130867.png',
-      path: 'C:\\Program Files (x86)\\Steam\\steam.exe'
-    },
-    {
-      id: 3,
-      name: 'Firefox',
-      icon: 'https://cdn.icon-icons.com/icons2/2107/PNG/512/file_type_firefox_icon_130134.png',
-      path: 'C:\\Program Files\\Mozilla Firefox\\firefox.exe'
-    },
-    {
-      id: 4,
-      name: 'Discord',
-      icon: 'https://cdn.icon-icons.com/icons2/2108/PNG/512/discord_icon_130958.png',
-      path: 'C:\\Users\\User\\AppData\\Local\\Discord\\app-1.0.9005\\Discord.exe'
-    },
-    {
-      id: 5,
-      name: 'Steam',
-      icon: 'https://cdn.icon-icons.com/icons2/2108/PNG/512/steam_icon_130867.png',
-      path: 'C:\\Games\\Steam\\steam.exe'
-    } // <<< Duplicate Steam entry for testing
-  ]
-
-  ipcMain.on('remove-programs', (_event, programIdsToRemove: number[]) => {
-    const libraryFilePath = getLibraryFilePath()
-    console.log(`Received request to remove ${programIdsToRemove.length} programs.`)
-
-    if (!fs.existsSync(libraryFilePath)) {
-      console.log('Library file does not exist, nothing to remove.')
-      return
-    }
-
-    try {
-      const library = JSON.parse(fs.readFileSync(libraryFilePath, 'utf-8'))
-
-      // Filter the library, keeping only the programs whose ID is NOT in the deletion list
-      const updatedLibrary = library.filter((program) => !programIdsToRemove.includes(program.id))
-
-      // Write the new, smaller library back to the file
-      fs.writeFileSync(libraryFilePath, JSON.stringify(updatedLibrary, null, 2))
-      console.log('Programs removed successfully. Updated library saved.')
-    } catch (error) {
-      console.error('Failed to removed programs from library:', error)
-    }
-  })
-
-  //endregion program adding
-
-  // --- NEW: Duplicate Handling Logic ---
-  const nameCounts = new Map<string, number>()
-
-  const getUniqueName = (name: string): string => {
-    const count = nameCounts.get(name) || 0
-    nameCounts.set(name, count + 1)
-    if (count === 0) {
-      return name // First time we've seen this name
-    }
-    return `${name} (${count + 1})` // Append (2), (3), etc.
+  try {
+    // Replace mock data with a call to the new registry scan function
+    await scanRegistry(event)
+  } catch (error) {
+    console.error('An error occurred during the program scan:', error)
+  } finally {
+    // Once the scan is complete, send the completion event and reset the flag
+    event.sender.send('scan-complete')
+    isScanning = false
+    console.log('Scan complete.')
   }
-  // --- END: Duplicate Handling Logic ---
-
-  let index = 0
-  const interval = setInterval(() => {
-    if (index < mockPrograms.length) {
-      const originalProgram = mockPrograms[index]
-      // Create a new program object with the potentially modified name
-      const programToSend = {
-        ...originalProgram,
-        name: getUniqueName(originalProgram.name)
-      }
-
-      event.sender.send('program-found', programToSend)
-      console.log(`Sent program: ${programToSend.name}`)
-      index++
-    } else {
-      clearInterval(interval)
-      isScanning = false
-      event.sender.send('scan-complete')
-      console.log('Scan complete.')
-    }
-  }, 500)
 })
+
+ipcMain.on('remove-programs', (_event, programIdsToRemove: number[]) => {
+  const libraryFilePath = getLibraryFilePath()
+  console.log(`Received request to remove ${programIdsToRemove.length} programs.`)
+
+  if (!fs.existsSync(libraryFilePath)) {
+    console.log('Library file does not exist, nothing to remove.')
+    return
+  }
+
+  try {
+    const library = JSON.parse(fs.readFileSync(libraryFilePath, 'utf-8'))
+
+    // Filter the library, keeping only the programs whose ID is NOT in the deletion list
+    const updatedLibrary = library.filter((program) => !programIdsToRemove.includes(program.id))
+
+    // Write the new, smaller library back to the file
+    fs.writeFileSync(libraryFilePath, JSON.stringify(updatedLibrary, null, 2))
+    console.log('Programs removed successfully. Updated library saved.')
+  } catch (error) {
+    console.error('Failed to removed programs from library:', error)
+  }
+})
+
+//endregion program adding
 
 //region overlay functions
 

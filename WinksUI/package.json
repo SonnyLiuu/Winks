@@ -27,7 +27,8 @@
     "bcryptjs": "^3.0.2",
     "electron-updater": "^6.3.9",
     "mongodb": "^6.17.0",
-    "react-router-dom": "^7.6.2"
+    "react-router-dom": "^7.6.2",
+    "winreg": "^1.2.5"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
