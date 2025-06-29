@@ -8,13 +8,21 @@ const validSendChannels = [
   'move-cursor-and-scroll',
   'keyboard',
   'signup-user',
-  'login-user'
+  'login-user',
+  'scan-for-programs',
+  'add-programs',
+  'get-library',
+  'launch-program',
+  'remove-programs'
 ]
 const validReceiveChannels = [
   'set-coordinate-type',
   'proximity-update',
   'signup-response',
-  'login-response'
+  'login-response',
+  'program-found',
+  'scan-complete',
+  'library-updated'
 ]
 
 // Extend the electron API with a custom `send` function
