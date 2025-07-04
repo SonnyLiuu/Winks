@@ -50,5 +50,34 @@
     "react-dom": "18.2.0",
     "typescript": "^5.8.3",
     "vite": "^6.3.5"
+  },
+
+  "build": {
+    "appId": "com.winks.app",
+    "productName": "WinksUI",
+    "files": [
+      "out/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../python",
+        "to": "python"
+      },
+      {
+        "from": "./python_runtime",
+        "to": "python_runtime"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "resources/icon.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "resources/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }
