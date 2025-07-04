@@ -10,3 +10,5 @@ WinksUI/*.log*
 /client/.next/
 /.idea/.gitignore
 /.idea/vcs.xml
+/WinksUI/python_runtime/
+/python/_internal/
