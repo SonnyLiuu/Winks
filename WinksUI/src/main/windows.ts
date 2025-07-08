@@ -36,6 +36,7 @@ export function createMainWindow(): BrowserWindow {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
+  //mainWindow.webContents.openDevTools();
   return mainWindow;
 }
 
@@ -70,6 +71,5 @@ export function createOverlayWindow(): BrowserWindow {
   } else {
     overlayWindow.loadFile(join(__dirname, '../renderer/Overlay.html'))
   }
-
   return overlayWindow;
 }

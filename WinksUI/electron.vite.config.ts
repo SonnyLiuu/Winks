@@ -16,16 +16,14 @@ export default defineConfig({
       }
     },
     plugins: [react()],
-    // --- Add this optimizeDeps section ---
-    // This explicitly tells the dev server to NOT bundle robotjs.
-    optimizeDeps: {
-      exclude: ['@hurdlegroup/robotjs']
-    },
     build: {
       rollupOptions: {
         input: {
+          // Defines your main window's entry point
           main: resolve(__dirname, 'src/renderer/index.html'),
+          // Defines your overlay window's entry point
           overlay: resolve(__dirname, 'src/renderer/Overlay.html'),
+          // Defines the entry point for the "get click" overlay
           overlayGetClick: resolve(__dirname, 'src/renderer/OverlayGetClick.html')
         }
       },
