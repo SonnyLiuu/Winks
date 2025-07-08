@@ -6,6 +6,9 @@ WinksUI/out
 WinksUI/.DS_Store
 WinksUI/.eslintcache
 WinksUI/*.log*
+WinksUI/python_runtime
+WinksUI/py_wheels
+python/_internal
 
 /client/.next/
 /.idea/.gitignore

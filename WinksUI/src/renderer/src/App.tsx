@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { HashRouter as Router, Routes, Route } from 'react-router-dom'
 import { useState } from 'react'
 import HomePage from './components/pages/Homepage'
 import CalibrationPage from './components/pages/callibrationPage' // <-- make sure this exists

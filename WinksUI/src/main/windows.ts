@@ -7,7 +7,7 @@ import { screen } from 'electron'
 export let mainWindow: BrowserWindow
 export let overlayWindow: BrowserWindow
 
-export function createMainWindow(): void {
+export function createMainWindow(): BrowserWindow {
   mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
@@ -35,9 +35,11 @@ export function createMainWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  return mainWindow;
 }
 
-export function createOverlayWindow(): void {
+export function createOverlayWindow(): BrowserWindow {
   const height = screen.getPrimaryDisplay().workAreaSize.height
   const windowWidth = 360
   const windowHeight = 360
@@ -62,10 +64,12 @@ export function createOverlayWindow(): void {
       sandbox: false
     }
   })
-  overlayWindow.webContents.openDevTools({ mode: 'detach' })
+  //overlayWindow.webContents.openDevTools({ mode: 'detach' })
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     overlayWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/Overlay.html`)
   } else {
     overlayWindow.loadFile(join(__dirname, '../renderer/Overlay.html'))
   }
+
+  return overlayWindow;
 }

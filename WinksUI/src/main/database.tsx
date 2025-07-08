@@ -2,7 +2,7 @@ import { MongoClient, Collection } from 'mongodb'
 import bcrypt from 'bcryptjs'
 
 const uri =
-  'temp'
+  'mongodb+srv://root:RickLinebacker12345@winks.n0ibi.mongodb.net/?retryWrites=true&w=majority&appName=Winks'
 const client = new MongoClient(uri)
 const dbName = 'User_Profiles'
 const collectionName = 'Profiles'
