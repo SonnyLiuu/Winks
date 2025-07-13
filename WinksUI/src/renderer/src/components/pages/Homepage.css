@@ -1,26 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
-html, body {
-    height: 100%;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-  }
+/* Homepage.css */
 
-  .home-container {
-      height: 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    padding: 0 20px;
-    background: linear-gradient(135deg, #e0f7fa, #f0f0f0);
-    font-family: 'Poppins', sans-serif;
-    text-align: center;
-  }
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.home-container {
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(to bottom right, #e0f1ff, #f7f9ff);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 24px;
+}
 
 .home-logo {
   max-width: 700px;
@@ -34,14 +34,14 @@ html, body {
 }
 
 .home-heading {
-  font-size: 48px;
+  font-size: 28px;
   font-weight: 600;
   color: #333;
-  margin-bottom: 12px;
+  margin-bottom: 7px;
 }
 
 .home-subtext {
-  font-size: 25px;
+  font-size: 15px;
   color: #666;
   margin-bottom: 24px;
 }
