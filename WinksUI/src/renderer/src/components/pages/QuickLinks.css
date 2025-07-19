@@ -2,23 +2,92 @@ body{
     background-color: #f0f4ff;
 }
 
+.top-buttons-container {
+  position: absolute;
+  top: 0;
+  right: 12px;
+  display: flex;
+  gap: 15px;
+  z-index: 10;
+}
+
+.add-program-button {
+  padding: 14px 34px;
+  background: linear-gradient(135deg, #5c80ff, #3558e3);
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(92, 128, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.add-program-button:hover {
+  background: linear-gradient(135deg, #3f66f1, #2038cc);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(63, 102, 241, 0.4);
+}
+
+/* New styles for the select/remove buttons */
+.select-button, .remove-selected-button {
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+}
+
+.select-button {
+  background: linear-gradient(135deg, #6c757d, #495057);
+  box-shadow: 0 8px 20px rgba(108, 117, 125, 0.3);
+}
+.select-button:hover {
+  background: linear-gradient(135deg, #5a6268, #343a40);
+  transform: translateY(-2px);
+}
+
+.remove-selected-button {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  box-shadow: 0 8px 20px rgba(220, 53, 69, 0.3);
+}
+.remove-selected-button:hover {
+  background: linear-gradient(135deg, #c82333, #bd2130);
+  transform: translateY(-2px);
+}
+.remove-selected-button:disabled {
+  background: #adb5bd;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+
 .quick-links-container {
-    padding: 60px 40px;
-    max-width: 1200px;
-    margin: 0 auto;
-    text-align: center;
-    font-family: 'Poppins', sans-serif;
-    background: linear-gradient(to right, #f0f4ff, #ffffff);
-    border-radius: 20px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
-  }
-  
+  position: relative;
+  padding: 60px 40px;
+  max-width: 1200px;
+  min-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(to right, #f0f4ff, #ffffff);
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+  height: 90vh; /* Set a fixed height */
+  overflow-y: auto; /* Add a vertical scrollbar only when needed */
+}
+
   .quick-links-container h2 {
     font-size: 36px;
     margin-bottom: 40px;
     color: #2c3e50;
   }
-  
+
   .tiles-grid {
     display: flex;
     justify-content: center;
@@ -26,8 +95,17 @@ body{
     flex-wrap: wrap;
     margin-bottom: 40px;
   }
-  
-  .tile {
+
+.header-row {
+  width: 100%;
+  display: flex;
+  justify-content: center; /* This centers the main item, the h2 */
+  align-items: center;
+  position: relative;      /* This is the key for positioning the button */
+  margin-bottom: 2rem;     /* Adds space below the header */
+}
+
+.tile {
     width: 220px;
     height: 220px;
     background: white;
@@ -42,13 +120,13 @@ body{
     transition: transform 0.25s ease, box-shadow 0.25s ease;
     border: 2px solid transparent;
   }
-  
+
   .tile:hover {
     transform: translateY(-8px) scale(1.05);
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12);
     border-color: #5c80ff;
   }
-  
+
   .tile-icon {
     width: 90px;
     height: 90px;
@@ -56,17 +134,17 @@ body{
     margin-bottom: 16px;
     transition: transform 0.3s ease;
   }
-  
+
   .tile:hover .tile-icon {
     transform: rotate(5deg) scale(1.1);
   }
-  
+
   .tile-label {
     font-size: 18px;
     font-weight: 600;
     color: #333;
   }
-  
+
   /* Back Button */
   .back-button {
     margin-top: 20px;
@@ -81,9 +159,125 @@ body{
     box-shadow: 0 8px 20px rgba(92, 128, 255, 0.3);
     transition: all 0.3s ease;
   }
-  
+
   .back-button:hover {
     background: linear-gradient(135deg, #3f66f1, #2038cc);
     transform: translateY(-2px);
     box-shadow: 0 12px 30px rgba(63, 102, 241, 0.4);
   }
+
+.add-website-button {
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  background: linear-gradient(135deg, #17a2b8, #138496);
+  box-shadow: 0 8px 20px rgba(23, 162, 184, 0.3);
+}
+.add-website-button:hover {
+  background: linear-gradient(135deg, #138496, #117a8b);
+  transform: translateY(-2px);
+}
+
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 30px 40px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 500px;
+  text-align: left;
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 25px;
+  color: #2c3e50;
+  font-size: 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #495057;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 15px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #5c80ff;
+  box-shadow: 0 0 0 3px rgba(92, 128, 255, 0.25);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.modal-cancel-button, .modal-save-button {
+  padding: 12px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.modal-cancel-button {
+  background-color: #6c757d;
+  color: white;
+}
+.modal-cancel-button:hover {
+  background-color: #5a6268;
+}
+
+.modal-save-button {
+  background: linear-gradient(135deg, #5c80ff, #3558e3);
+  color: white;
+}
+.modal-save-button:hover {
+  transform: translateY(-1px);
+}
+.modal-save-button:disabled {
+  background: #adb5bd;
+  cursor: not-allowed;
+  transform: none;
+}
+

@@ -4,6 +4,7 @@ import HomePage from './components/pages/Homepage'
 import CalibrationPage from './components/pages/callibrationPage' // <-- make sure this exists
 import MainLayout from './components/Layout/MainLayout'
 import QuickLinks from './components/pages/QuickLinks'
+import AddProgram from './components/pages/AddProgram/AddProgram'
 
 function App(): React.JSX.Element {
   const [isLoggedIn, setIsLoggedIn] = useState(false) // Manage login state
@@ -35,6 +36,7 @@ function App(): React.JSX.Element {
           }
         />
         <Route path="/quick-links" element={<QuickLinks />} />
+        <Route path="/add-program" element={<AddProgram />} />
       </Routes>
     </Router>
   )

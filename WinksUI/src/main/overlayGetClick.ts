@@ -32,6 +32,7 @@ export function createOverlayGetClick(coordinateType: string): void {
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     overlayGetClick.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/OverlayGetClick.html`)
+    overlayGetClick.webContents.openDevTools({ mode: 'detach' })
   } else {
     overlayGetClick.loadFile(join(__dirname, '../renderer/OverlayGetClick.html'))
   }
@@ -43,7 +44,6 @@ export function createOverlayGetClick(coordinateType: string): void {
   })
 
   overlayGetClick.focus()
-  //overlayGetClick.webContents.openDevTools({ mode: 'detach' })
   overlayGetClick.on('closed', () => {
     overlayGetClick = null
   })

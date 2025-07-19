@@ -15,13 +15,26 @@ const validSendChannels = [
   'move-cursor-and-scroll',
   'keyboard',
   'signup-user',
-  'login-user'
+  'login-user',
+  'scan-for-programs',
+  'add-programs',
+  'get-library',
+  'launch-program',
+  'remove-programs',
+  'cancel-scan',
+  'fetch-website-info',
+  'add-website',
+  'launch-website'
 ]
 const validReceiveChannels = [
   'set-coordinate-type',
   'proximity-update',
   'signup-response',
-  'login-response'
+  'login-response',
+  'program-found',
+  'scan-complete',
+  'library-updated',
+  'website-info-reply'
 ]
 
 // --- Expose protected methods that allow the renderer process to IPC ---
