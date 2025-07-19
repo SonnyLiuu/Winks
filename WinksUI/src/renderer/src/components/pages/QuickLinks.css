@@ -69,17 +69,17 @@ body{
 
 .quick-links-container {
   position: relative;
-  padding: 60px 40px;
-  max-width: 1200px;
-  min-width: 800px;
+  padding: 60px 4vw; /* Use viewport width for responsive padding */
+  width: 95%; /* Allow the container to use more of the screen width */
+  max-width: 3440px; /* Set a larger max-width for very wide screens */
   margin: 0 auto;
   text-align: center;
   font-family: 'Poppins', sans-serif;
   background: linear-gradient(to right, #f0f4ff, #ffffff);
   border-radius: 20px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
-  height: 90vh; /* Set a fixed height */
-  overflow-y: auto; /* Add a vertical scrollbar only when needed */
+  height: 90vh;
+  overflow-y: auto;
 }
 
   .quick-links-container h2 {
@@ -88,13 +88,13 @@ body{
     color: #2c3e50;
   }
 
-  .tiles-grid {
-    display: flex;
-    justify-content: center;
-    gap: 40px;
-    flex-wrap: wrap;
-    margin-bottom: 40px;
-  }
+.tiles-grid {
+  display: grid;
+  /* This is the key: it creates as many columns as can fit, with a minimum size */
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 40px;
+  margin-bottom: 40px;
+}
 
 .header-row {
   width: 100%;
@@ -106,7 +106,7 @@ body{
 }
 
 .tile {
-    width: 220px;
+    /*width: 220px;*/
     height: 220px;
     background: white;
     border-radius: 18px;
@@ -281,3 +281,28 @@ body{
   transform: none;
 }
 
+.input-with-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-button input {
+  padding-right: 95px; /* Increased padding to make space for the new button */
+}
+
+.paste-button {
+  position: absolute;
+  right: 6px;
+  height: calc(100% - 12px);
+  padding: 0 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+  background: linear-gradient(135deg, #6c757d, #495057);
+  box-shadow: 0 4px 10px rgba(108, 117, 125, 0.2);
+}

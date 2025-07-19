@@ -25,6 +25,7 @@ export default function QuickLinks() {
   const [newName, setNewName] = useState('')
   const [newIcon, setNewIcon] = useState('')
   const [isFetching, setIsFetching] = useState(false)
+  const [showScanConfirm, setShowScanConfirm] = useState(false)
 
   // Effect to load the library on component mount
   useEffect(() => {
@@ -55,10 +56,12 @@ export default function QuickLinks() {
     }
   }, [isModalOpen])
 
-  const handleUrlBlur = () => {
+  const handleUrlBlur = (url: string) => {
+    console.log('handling blur')
     setIsFetching(true)
-    setNewName('Fetching...')
-    window.electron.send('fetch-website-info', newUrl)
+    setNewName('Finding Name...')
+    console.log(newUrl)
+    window.electron.send('fetch-website-info', url)
   }
 
   const handleSaveWebsite = () => {
@@ -104,6 +107,17 @@ export default function QuickLinks() {
     setIsSelectMode(!isSelectMode)
   }
 
+  const handlePaste = async () => {
+    const text = await navigator.clipboard.readText()
+    setNewUrl(text)
+    handleUrlBlur(text)
+  }
+
+  const handleConfirmScan = () => {
+    setShowScanConfirm(false)
+    navigate('/add-program')
+  }
+
   return (
     <div className="quick-links-container">
       {isModalOpen && (
@@ -112,14 +126,19 @@ export default function QuickLinks() {
             <h3>Add Website Shortcut</h3>
             <div className="form-group">
               <label htmlFor="url">Website URL</label>
-              <input
-                type="text"
-                id="url"
-                value={newUrl}
-                onChange={(e) => setNewUrl(e.target.value)}
-                onBlur={handleUrlBlur}
-                placeholder="e.g., https://www.youtube.com"
-              />
+              <div className="input-with-button">
+                <input
+                  type="text"
+                  id="url"
+                  value={newUrl}
+                  onChange={(e) => setNewUrl(e.target.value)}
+                  onBlur={() => handleUrlBlur(newUrl)}
+                  placeholder="e.g., https://www.youtube.com"
+                />
+                <button onMouseDown={handlePaste} className="paste-button">
+                  Paste
+                </button>
+              </div>
             </div>
             <div className="form-group">
               <label htmlFor="name">Shortcut Name</label>
@@ -147,6 +166,26 @@ export default function QuickLinks() {
         </div>
       )}
 
+      {showScanConfirm && (
+        <div className="modal-overlay">
+          <div className="modal-content confirm-modal">
+            <h3>Scan for Programs?</h3>
+            <p>
+              This will scan your PC for installed applications and may take a moment. Do you wish
+              to proceed?
+            </p>
+            <div className="modal-actions">
+              <button className="modal-cancel-button" onClick={() => setShowScanConfirm(false)}>
+                No
+              </button>
+              <button className="modal-save-button" onClick={handleConfirmScan}>
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="top-buttons-container">
         {isSelectMode ? (
           <>
@@ -166,7 +205,7 @@ export default function QuickLinks() {
             <button onClick={() => setIsModalOpen(true)} className="add-website-button">
               Add Website
             </button>
-            <button onClick={() => navigate('/add-program')} className="add-program-button">
+            <button onClick={() => setShowScanConfirm(true)} className="add-program-button">
               Add Program
             </button>
             <button onClick={toggleSelectMode} className="select-button">

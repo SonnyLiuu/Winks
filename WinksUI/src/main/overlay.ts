@@ -4,6 +4,8 @@ import { closeOverlayGetClick } from './overlayGetClick'
 import { overlayWindow } from './windows' // Using your existing import
 import { exec } from 'node:child_process'
 import * as os from 'node:os'
+import { spawn } from 'child_process'
+import path from 'path'
 
 interface coordinate {
   x: number
@@ -16,7 +18,7 @@ let dragDestination: coordinate | null = null
 let overlayLocation: coordinate | null = null
 
 // Variable to hold the timer ID for the watcher
-let proximityInterval: NodeJS.Timeout | null = null;
+let proximityInterval: NodeJS.Timeout | null = null
 
 export function saveCursorPosition(coordinateType: string): void {
   if (coordinateType === 'scroll') {
@@ -58,17 +60,22 @@ export function overlayScroll(horizontal: boolean, dir: number): void {
 }
 
 export function overlayDrag(): void {
-  console.log('doing overlay drag')
   if (dragOrigin && dragDestination) {
-    robot.moveMouse(dragOrigin.x, dragOrigin.y)
-    robot.mouseToggle('down', 'left')
-    robot.moveMouseSmooth(dragDestination.x, dragDestination.y, 1.8)
-    robot.mouseToggle('up', 'left')
-  } else console.log(dragOrigin, dragDestination)
+    const scriptContent = `
+        const robot = require('@hurdlegroup/robotjs');
+        const start = ${JSON.stringify(dragOrigin)};
+        const end = ${JSON.stringify(dragDestination)};
+        robot.moveMouse(start.x, start.y);
+        robot.mouseToggle('down', 'left');
+        robot.moveMouseSmooth(end.x, end.y, 1.8);
+        robot.mouseToggle('up', 'left');
+    `
+    spawn('node', ['-e', scriptContent])
+  }
 }
 
 export function moveOverlay(): void {
-  if (!overlayWindow || !overlayLocation) return;
+  if (!overlayWindow || !overlayLocation) return
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workArea
   const { width: windowWidth, height: windowHeight } = overlayWindow.getBounds()
   const screenCorners = {
@@ -116,41 +123,41 @@ export function openOnScreenKeyboard(): void {
 
 // --- Proximity watcher is now explicitly started and stopped ---
 export function startOverlayProximityWatcher(): void {
-  if (proximityInterval) return; // Prevent multiple intervals
-  
+  if (proximityInterval) return // Prevent multiple intervals
+
   const checkDistance = (): void => {
     // Add a guard to ensure the window still exists before using it
     if (!overlayWindow || overlayWindow.isDestroyed()) {
-        stopOverlayProximityWatcher(); // Stop the timer if the window is gone
-        return;
+      stopOverlayProximityWatcher() // Stop the timer if the window is gone
+      return
     }
     try {
-        const cursor = screen.getCursorScreenPoint()
-        const bounds = overlayWindow.getBounds()
-        const buffer = 150
-        const isNear =
-          cursor.x >= bounds.x - buffer &&
-          cursor.x <= bounds.x + bounds.width + buffer &&
-          cursor.y >= bounds.y - buffer &&
-          cursor.y <= bounds.y + bounds.height + buffer
-        overlayWindow.webContents.send('proximity-update', isNear)
+      const cursor = screen.getCursorScreenPoint()
+      const bounds = overlayWindow.getBounds()
+      const buffer = 150
+      const isNear =
+        cursor.x >= bounds.x - buffer &&
+        cursor.x <= bounds.x + bounds.width + buffer &&
+        cursor.y >= bounds.y - buffer &&
+        cursor.y <= bounds.y + bounds.height + buffer
+      overlayWindow.webContents.send('proximity-update', isNear)
     } catch (error) {
-        // This catch block prevents the "Object has been destroyed" error
-        // from crashing the app if the timer fires after the window is closed.
-        console.error("Error in proximity watcher, stopping to prevent spam:", error);
-        stopOverlayProximityWatcher();
+      // This catch block prevents the "Object has been destroyed" error
+      // from crashing the app if the timer fires after the window is closed.
+      console.error('Error in proximity watcher, stopping to prevent spam:', error)
+      stopOverlayProximityWatcher()
     }
   }
-  proximityInterval = setInterval(checkDistance, 100);
-  console.log("Overlay proximity watcher started.");
+  proximityInterval = setInterval(checkDistance, 100)
+  console.log('Overlay proximity watcher started.')
 }
 
 export function stopOverlayProximityWatcher(): void {
-    if (proximityInterval) {
-        clearInterval(proximityInterval);
-        proximityInterval = null;
-        console.log("Overlay proximity watcher stopped.");
-    }
+  if (proximityInterval) {
+    clearInterval(proximityInterval)
+    proximityInterval = null
+    console.log('Overlay proximity watcher stopped.')
+  }
 }
 
 // --- REMOVED: Do not automatically start the watcher here ---
