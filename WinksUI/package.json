@@ -61,14 +61,14 @@
       "**/node_modules/@hurdlegroup/robotjs/**/*"
     ],
     "extraResources": [
-    {
-      "from": "../python",
-      "to": "python"
-    },
-    {
-      "from": "./python_runtime",
-      "to": "python_runtime"
-    }
+      {
+        "from": "../python",
+        "to": "python"
+      },
+      {
+        "from": "./python_runtime",
+        "to": "python_runtime"
+      }
     ],
     "win": {
       "target": "nsis",

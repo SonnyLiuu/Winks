@@ -129,7 +129,6 @@ app.on('window-all-closed', () => {
     setTimeout(() => pythonProcess?.kill('SIGTERM'), 1000);
   }
 });
-})
 
 //region website adding
 
