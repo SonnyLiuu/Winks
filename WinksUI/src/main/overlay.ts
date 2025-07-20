@@ -4,8 +4,6 @@ import { closeOverlayGetClick } from './overlayGetClick'
 import { overlayWindow } from './windows' // Using your existing import
 import { exec } from 'node:child_process'
 import * as os from 'node:os'
-import { spawn } from 'child_process'
-import path from 'path'
 
 interface coordinate {
   x: number
@@ -61,16 +59,10 @@ export function overlayScroll(horizontal: boolean, dir: number): void {
 
 export function overlayDrag(): void {
   if (dragOrigin && dragDestination) {
-    const scriptContent = `
-        const robot = require('@hurdlegroup/robotjs');
-        const start = ${JSON.stringify(dragOrigin)};
-        const end = ${JSON.stringify(dragDestination)};
-        robot.moveMouse(start.x, start.y);
-        robot.mouseToggle('down', 'left');
-        robot.moveMouseSmooth(end.x, end.y, 1.8);
-        robot.mouseToggle('up', 'left');
-    `
-    spawn('node', ['-e', scriptContent])
+    robot.moveMouse(dragOrigin.x, dragOrigin.y)
+    robot.mouseToggle('down', 'left')
+    robot.moveMouseSmooth(dragDestination.x, dragDestination.y, 1.8)
+    robot.mouseToggle('up', 'left')
   }
 }
 

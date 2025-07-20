@@ -53,7 +53,7 @@ export default function QuickLinks() {
       return () => {
         if (unsubscribe) unsubscribe()
       }
-    }
+    } else return
   }, [isModalOpen])
 
   const handleUrlBlur = (url: string) => {

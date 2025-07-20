@@ -1,6 +1,5 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
-import path from 'path'
 import fs from 'fs'
 import { createMainWindow, createOverlayWindow } from './windows'
 import { createOverlayGetClick } from './overlayGetClick'
@@ -197,6 +196,14 @@ ipcMain.on('fetch-website-info', async (event, url) => {
   }
 })
 
+interface LibraryItem {
+  id: number
+  name: string
+  icon: string
+  path: string
+  type: 'program' | 'website'
+}
+
 ipcMain.on('add-website', (_event, websiteData) => {
   const libraryFilePath = getLibraryFilePath()
   try {
@@ -205,7 +212,7 @@ ipcMain.on('add-website', (_event, websiteData) => {
       library = JSON.parse(fs.readFileSync(libraryFilePath, 'utf-8'))
     }
 
-    const alreadyExists = library.some((item) => item.path === websiteData.url)
+    const alreadyExists = library.some((item: LibraryItem) => item.path === websiteData.url)
     if (alreadyExists) {
       console.log('Website already exists in library.')
       return
@@ -269,7 +276,7 @@ ipcMain.on('add-programs', (_event, programsToAdd) => {
     }
 
     // 1. Create a Set of all existing program paths for a quick lookup.
-    const existingPaths = new Set(existingLibrary.map((p) => p.path))
+    const existingPaths = new Set(existingLibrary.map((p: LibraryItem) => p.path))
 
     // 2. Filter the incoming programs to keep only the ones not already in the library.
     const newPrograms = programsToAdd.filter((program) => !existingPaths.has(program.path))
