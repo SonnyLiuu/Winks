@@ -12,7 +12,11 @@ type Props = {
   onLoginSuccess: () => void
 }
 
-export default function MainLayout({ onLogout, isLoggedIn, onLoginSuccess }: Props) {
+export default function MainLayout({
+  onLogout,
+  isLoggedIn,
+  onLoginSuccess
+}: Props): React.JSX.Element {
   const [page, setPage] = useState<'account' | 'settings'>(isLoggedIn ? 'settings' : 'account')
 
   useEffect(() => {

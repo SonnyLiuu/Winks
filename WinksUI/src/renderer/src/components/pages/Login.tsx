@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import './AuthPage.css'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 
 type LoginPageProps = {
   onSwitchToSignup: () => void
@@ -18,27 +19,30 @@ export default function LoginPage({
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { login } = useAuth()
 
-  useEffect(() => {
-    const cleanup = window.electron.on('login-response', (response: any) => {
-      if (response.success) {
-        setMessage('Login successful!')
-        onLoginSuccess()
-        navigate('/dashboard')
-      } else {
-        setMessage(`Error: ${response.message}`)
-      }
-    })
-    return () => {
-      if (cleanup) cleanup()
-    }
-  }, [navigate, onLoginSuccess])
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
+    if (loading) return
+    setLoading(true)
     setMessage('Logging in...')
-    window.electron.send('login-user', { email, password })
+    try {
+      await login(email, password)
+      setMessage('Login successful!')
+      onLoginSuccess()
+      navigate('/dashboard')
+    } catch (error) {
+      if (error instanceof Error) {
+        setMessage(`Error: ${error.message}`)
+      } else {
+        setMessage('An unknown error occurred during login.')
+      }
+      console.error('Login error:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -75,13 +79,20 @@ export default function LoginPage({
         </div>
 
         <div style={{ textAlign: 'right', marginBottom: '20px' }}>
-          <a href="#" onClick={onSwitchToForgotPassword} className="auth-link">
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              onSwitchToForgotPassword()
+            }}
+            className="auth-link"
+          >
             Forgot Password?
           </a>
         </div>
 
-        <button type="submit" className="auth-button">
-          Sign In
+        <button type="submit" className="auth-button" disabled={loading}>
+          {loading ? 'Logging In...' : 'Sign In'}
         </button>
       </form>
 
@@ -96,7 +107,14 @@ export default function LoginPage({
 
       <p className="auth-text-center">
         Don&#39;t have an account?{' '}
-        <a href="#" onClick={onSwitchToSignup} className="auth-link">
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault()
+            onSwitchToSignup()
+          }}
+          className="auth-link"
+        >
           Sign Up
         </a>
       </p>

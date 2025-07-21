@@ -12,11 +12,13 @@ export default function AccountPage({
   onLoginSuccess,
   onSignupSuccess
 }: AccountPageProps): React.JSX.Element {
-  const [currentView, setCurrentView] = useState<'initial' | 'login' | 'signup' | 'forgotPassword'>('initial')
+  const [currentView, setCurrentView] = useState<'initial' | 'login' | 'signup' | 'forgotPassword'>(
+    'initial'
+  )
 
-  const handleGoBack = () => setCurrentView('initial')
-  const handleSwitchToForgotPassword = () => setCurrentView('forgotPassword')
-  const handleGoBackToLogin = () => setCurrentView('login')
+  const handleGoBack = (): void => setCurrentView('initial')
+  const handleSwitchToForgotPassword = (): void => setCurrentView('forgotPassword')
+  const handleGoBackToLogin = (): void => setCurrentView('login')
 
   if (currentView === 'login') {
     return (

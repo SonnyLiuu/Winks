@@ -9,6 +9,8 @@ import { JSDOM } from 'jsdom'
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 import * as path from 'path'
 
+const API_BASE_URL = 'https://winks-cloudflare.winksapi.workers.dev/api'
+
 // --- Consolidated Imports ---
 import {
   openOnScreenKeyboard,
@@ -17,7 +19,8 @@ import {
   startOverlayProximityWatcher, // Import the watcher controls
   stopOverlayProximityWatcher
 } from './overlay'
-import { connectToDatabase, createUser, verifyUser } from './database'
+import { getSettings, saveSettings, AppSettings } from './settingsManager'
+import { LibraryItem } from '../types'
 
 // --- Global Variables ---
 let pythonProcess: ChildProcessWithoutNullStreams | undefined
@@ -93,8 +96,6 @@ app.whenReady().then(() => {
     console.error(`Failed to start Python process: ${err.message}`)
     app.quit()
   })
-
-  connectToDatabase()
 
   // --- Create Windows and store references ---
   mainWindow = createMainWindow()
@@ -195,14 +196,6 @@ ipcMain.on('fetch-website-info', async (event, url) => {
     event.sender.send('website-info-reply', null)
   }
 })
-
-interface LibraryItem {
-  id: number
-  name: string
-  icon: string
-  path: string
-  type: 'program' | 'website'
-}
 
 ipcMain.on('add-website', (_event, websiteData) => {
   const libraryFilePath = getLibraryFilePath()
@@ -383,13 +376,58 @@ ipcMain.on('remove-programs', (_event, programIdsToRemove: number[]) => {
 // ===================================================================
 
 // --- Database Handlers ---
-ipcMain.on('signup-user', async (event, { email, password }) => {
-  const result = await createUser(email, password)
-  event.reply('signup-response', result)
+ipcMain.handle('signup-user', async (_, { email, password }) => {
+  const fetch = (await import('node-fetch')).default
+  try {
+    const response = await fetch(`${API_BASE_URL}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    })
+    return await response.json()
+  } catch (error) {
+    console.error('Signup IPC error:', error)
+    return { success: false, message: 'Failed to communicate with server.' }
+  }
 })
-ipcMain.on('login-user', async (event, { email, password }) => {
-  const result = await verifyUser(email, password)
-  event.reply('login-response', result)
+
+ipcMain.handle('login-user', async (_, { email, password }) => {
+  const fetch = (await import('node-fetch')).default
+  try {
+    const response = await fetch(`${API_BASE_URL}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    })
+    return await response.json()
+  } catch (error) {
+    console.error('Login IPC error:', error)
+    return { success: false, message: 'Failed to communicate with server.' }
+  }
+})
+
+ipcMain.handle('update-user-settings', async (_, { userId, settings }) => {
+  const fetch = (await import('node-fetch')).default
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settings })
+    })
+    return await response.json()
+  } catch (error) {
+    console.error('Update settings IPC error:', error)
+    return { success: false, message: 'Failed to communicate with server.' }
+  }
+})
+
+// --- Settings Handlers ---
+ipcMain.handle('get-settings', async (): Promise<AppSettings> => {
+  return getSettings()
+})
+
+ipcMain.on('save-settings', (_, settings: Partial<AppSettings>) => {
+  saveSettings(settings)
 })
 
 // --- Python Settings Handlers ---

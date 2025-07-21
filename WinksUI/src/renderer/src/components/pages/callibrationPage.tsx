@@ -1,23 +1,67 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
+import { Settings } from '../../../../types'
 import './Homepage.css';
 
 export default function CalibrationPage() {
-  const [yaw, setYaw] = useState(45);
-  const [pitch, setPitch] = useState(45);
-  const [deadZone, setDeadZone] = useState(6);
-  const [tiltAngle, setTiltAngle] = useState(20);
-  const navigate = useNavigate();
+  const { user, isLoggedIn, updateUserSettings } = useAuth()
+  const [yaw, setYaw] = useState(45)
+  const [pitch, setPitch] = useState(45)
+  const [deadZone, setDeadZone] = useState(6)
+  const [tiltAngle, setTiltAngle] = useState(20)
+  const navigate = useNavigate()
 
-  const handleSave = () => {
-    const settings = { yaw, pitch, deadZone, tiltAngle };
-    console.log('Saving settings:', settings);
-    alert('Settings saved!');
-  };
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (isLoggedIn && user?.settings) {
+        console.log('Loading settings from authenticated user')
+        setYaw(user.settings.yaw)
+        setPitch(user.settings.pitch)
+        setDeadZone(user.settings.deadZone)
+        setTiltAngle(user.settings.tiltAngle)
+      } else {
+        console.log('Loading settings from local storage')
+        const settings = await window.api.getSettings()
+        if (settings) {
+          setYaw(settings.yaw)
+          setPitch(settings.pitch)
+          setDeadZone(settings.deadZone)
+          setTiltAngle(settings.tiltAngle)
+        }
+      }
+    }
+    fetchSettings()
+  }, [isLoggedIn, user])
 
-  const handleProceed = () => {
-    navigate('/dashboard');
-  };
+  const handleSave = async () => {
+    const settings: Partial<Settings> = { yaw, pitch, deadZone, tiltAngle }
+
+    try {
+      if (isLoggedIn) {
+        console.log('Saving settings for authenticated user')
+        await updateUserSettings(settings as Settings)
+      } else {
+        console.log('Saving settings locally for guest user')
+        window.api.saveSettings(settings)
+      }
+
+      window.api.updateCalibration(settings)
+      console.log('Saving settings:', settings)
+      alert('Settings saved!')
+    } catch (error) {
+      console.error('Failed to save settings:', error)
+      if (error instanceof Error) {
+        alert(`Error saving settings: ${error.message}`)
+      } else {
+        alert('An unknown error occurred while saving settings.')
+      }
+    }
+  }
+
+  const handleProceed = (): void => {
+    navigate('/dashboard')
+  }
 
   const descriptions: { [key: string]: string } = {
     'Sensitivity Yaw (°)': 'Controls horizontal sensitivity of head movement.',

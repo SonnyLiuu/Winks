@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import './AuthPage.css'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 
 type SignupPageProps = {
   onSwitchToLogin: () => void
@@ -16,30 +17,30 @@ export default function SignupPage({
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { signup } = useAuth()
 
-  useEffect(() => {
-    const cleanup = window.electron.on('signup-response', (response: any) => {
-      if (response.success) {
-        setMessage('Account created successfully! Please log in.')
-        setEmail('')
-        setPassword('')
-        onSignupSuccess()
-        navigate('/dashboard')
-      } else {
-        setMessage(`Error: ${response.message}`)
-      }
-    })
-    return () => {
-      if (cleanup) cleanup()
-    }
-  }, [navigate, onSignupSuccess])
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
-    console.log('Signup form submitted:', { email, password })
+    if (loading) return
+    setLoading(true)
     setMessage('Signing up...')
-    window.electron.send('signup-user', { email, password })
+    try {
+      await signup(email, password)
+      setMessage('Account created successfully! Logging you in...')
+      onSignupSuccess()
+      navigate('/dashboard')
+    } catch (error) {
+      if (error instanceof Error) {
+        setMessage(`Error: ${error.message}`)
+      } else {
+        setMessage('An unknown error occurred during signup.')
+      }
+      console.error('Signup error:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -75,8 +76,8 @@ export default function SignupPage({
           />
         </div>
 
-        <button type="submit" className="auth-button">
-          Sign Up
+        <button type="submit" className="auth-button" disabled={loading}>
+          {loading ? 'Signing Up...' : 'Sign Up'}
         </button>
       </form>
 
@@ -91,7 +92,14 @@ export default function SignupPage({
 
       <p className="auth-text-center">
         Have an account?{' '}
-        <a href="#" onClick={onSwitchToLogin} className="auth-link">
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault()
+            onSwitchToLogin()
+          }}
+          className="auth-link"
+        >
           Sign in here
         </a>
       </p>

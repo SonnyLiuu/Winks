@@ -27,6 +27,7 @@
     "electron-updater": "^6.3.9",
     "jsdom": "^26.1.0",
     "mongodb": "^6.17.0",
+    "node-fetch": "^3.3.2",
     "react-router-dom": "^7.6.2",
     "winreg": "^1.2.5"
   },

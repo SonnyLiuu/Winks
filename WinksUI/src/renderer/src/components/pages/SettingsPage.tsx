@@ -1,15 +1,65 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext'
 
 export default function SettingsPage() {
-  const [leftSensitivity, setLeftSensitivity] = useState(0.5);
-  const [rightSensitivity, setRightSensitivity] = useState(0.5);
+  const { user, updateUserSettings } = useAuth()
+  const [leftSensitivity, setLeftSensitivity] = useState(0.5)
+  const [rightSensitivity, setRightSensitivity] = useState(0.5)
+  const [yaw, setYaw] = useState(45)
+  const [pitch, setPitch] = useState(45)
+  const [deadZone, setDeadZone] = useState(6)
+  const [tiltAngle, setTiltAngle] = useState(20)
+  const [message, setMessage] = useState('')
 
-  const handleSave = () => {
-    console.log('Saving wink sensitivity settings:', {
-      left: leftSensitivity,
-      right: rightSensitivity,
-    });
-    alert('Settings saved (connect to DB)');
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (user && user.settings) {
+        setLeftSensitivity(user.settings.leftWinkSensitivity || 0.5)
+        setRightSensitivity(user.settings.rightWinkSensitivity || 0.5)
+        setYaw(user.settings.yaw || 45)
+        setPitch(user.settings.pitch || 45)
+        setDeadZone(user.settings.deadZone || 6)
+        setTiltAngle(user.settings.tiltAngle || 20)
+      } else {
+        // Fallback to local settings for guests
+        const localSettings = await window.api.getSettings()
+        if (localSettings) {
+          setLeftSensitivity(localSettings.leftWinkSensitivity)
+          setRightSensitivity(localSettings.rightWinkSensitivity)
+          setYaw(localSettings.yaw)
+          setPitch(localSettings.pitch)
+          setDeadZone(localSettings.deadZone)
+          setTiltAngle(localSettings.tiltAngle)
+        }
+      }
+    };
+    loadSettings()
+  }, [user]);
+
+  const handleSave = async () => {
+    const newSettings = {
+      leftWinkSensitivity: leftSensitivity,
+      rightWinkSensitivity: rightSensitivity,
+      yaw: yaw,
+      pitch: pitch,
+      deadZone: deadZone,
+      tiltAngle: tiltAngle
+    }
+
+    setMessage('Saving...')
+    try {
+      if (user) {
+        await updateUserSettings(newSettings);
+        setMessage('Settings saved to your account!');
+      } else {
+        window.api.saveSettings(newSettings)
+        setMessage('Settings saved locally!')
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      setMessage(`Error: ${errorMessage}`)
+      console.error('Failed to save settings:', error)
+    }
   };
 
   return (
@@ -96,11 +146,10 @@ export default function SettingsPage() {
           onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#3d5ce4')}
           onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#5c80ff')}
         >
-          Calibrate
+          Save Settings
         </button>
-
-
       </div>
+      {message && <p style={{ textAlign: 'center', marginTop: '20px', color: message.startsWith('Error') ? 'red' : 'green' }}>{message}</p>}
     </div>
   );
 }
