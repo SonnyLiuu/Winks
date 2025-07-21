@@ -1,15 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function SettingsPage() {
   const [leftSensitivity, setLeftSensitivity] = useState(0.5);
   const [rightSensitivity, setRightSensitivity] = useState(0.5);
 
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const settings = await window.api.getSettings();
+      if (settings) {
+        setLeftSensitivity(settings.leftWinkSensitivity);
+        setRightSensitivity(settings.rightWinkSensitivity);
+      }
+    };
+    fetchSettings();
+  }, []);
+
   const handleSave = () => {
-    console.log('Saving wink sensitivity settings:', {
-      left: leftSensitivity,
-      right: rightSensitivity,
-    });
-    alert('Settings saved (connect to DB)');
+    const newSettings = {
+      leftWinkSensitivity: leftSensitivity,
+      rightWinkSensitivity: rightSensitivity,
+    };
+    window.api.saveSettings(newSettings);
+    console.log('Saving wink sensitivity settings:', newSettings);
+    alert('Settings saved!');
   };
 
   return (
@@ -96,7 +109,7 @@ export default function SettingsPage() {
           onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#3d5ce4')}
           onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#5c80ff')}
         >
-          Calibrate
+          Save Settings
         </button>
 
 

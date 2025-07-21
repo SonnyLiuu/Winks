@@ -6,6 +6,8 @@ export interface IElectronAPI {
   // Functions for Python Backend Communication
   updateSensitivities: (yaw: number, pitch: number) => Promise<{ success: boolean; error?: string }>;
   updateCalibration: (calibrationData: any) => Promise<{ success: boolean; error?: string }>;
+  getSettings: () => Promise<any>;
+  saveSettings: (settings: any) => void;
 }
 
 // Define channels you want to allow from the renderer
@@ -24,7 +26,8 @@ const validSendChannels = [
   'cancel-scan',
   'fetch-website-info',
   'add-website',
-  'launch-website'
+  'launch-website',
+  'save-settings'
 ]
 const validReceiveChannels = [
   'set-coordinate-type',
@@ -37,14 +40,22 @@ const validReceiveChannels = [
   'website-info-reply'
 ]
 
+const validInvokeChannels = [
+  'update-sensitivities',
+  'update-calibration',
+  'get-settings'
+]
+
 // --- Expose protected methods that allow the renderer process to IPC ---
 // This is the secure way to allow your UI to talk to the main process.
-const api: IElectronAPI = {
+const api = {
   // Python settings handlers
-  updateSensitivities: (yaw: number, pitch: number) => 
+  updateSensitivities: (yaw: number, pitch: number) =>
     ipcRenderer.invoke('update-sensitivities', yaw, pitch),
-  updateCalibration: (calibrationData: any) => 
-    ipcRenderer.invoke('update-calibration', calibrationData)
+  updateCalibration: (calibrationData: any) =>
+    ipcRenderer.invoke('update-calibration', calibrationData),
+  getSettings: () => ipcRenderer.invoke('get-settings'),
+  saveSettings: (settings: any) => ipcRenderer.send('save-settings', settings)
 }
 
 // Extend the electron API with a custom `send` function
@@ -54,6 +65,13 @@ const customAPI = {
     if (validSendChannels.includes(channel)) {
       ipcRenderer.send(channel, data)
     }
+  },
+  invoke: (channel: string, ...args: any[]): Promise<any> | undefined => {
+    if (validInvokeChannels.includes(channel)) {
+      return ipcRenderer.invoke(channel, ...args);
+    }
+    console.warn(`Attempted to invoke unauthorized channel: ${channel}`);
+    return undefined;
   },
   on: (channel: string, func: (...args: any[]) => void): (() => void) | undefined => {
     if (validReceiveChannels.includes(channel)) {

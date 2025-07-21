@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Homepage.css';
 
@@ -9,8 +9,23 @@ export default function CalibrationPage() {
   const [tiltAngle, setTiltAngle] = useState(20);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const settings = await window.api.getSettings();
+      if (settings) {
+        setYaw(settings.yaw);
+        setPitch(settings.pitch);
+        setDeadZone(settings.deadZone);
+        setTiltAngle(settings.tiltAngle);
+      }
+    };
+    fetchSettings();
+  }, []);
+
   const handleSave = () => {
     const settings = { yaw, pitch, deadZone, tiltAngle };
+    window.api.saveSettings(settings);
+    window.api.updateCalibration(settings);
     console.log('Saving settings:', settings);
     alert('Settings saved!');
   };

@@ -18,6 +18,7 @@ import {
   stopOverlayProximityWatcher
 } from './overlay'
 import { connectToDatabase, createUser, verifyUser } from './database'
+import { getSettings, saveSettings, AppSettings } from './settingsManager'
 
 // --- Global Variables ---
 let pythonProcess: ChildProcessWithoutNullStreams | undefined
@@ -390,6 +391,15 @@ ipcMain.on('signup-user', async (event, { email, password }) => {
 ipcMain.on('login-user', async (event, { email, password }) => {
   const result = await verifyUser(email, password)
   event.reply('login-response', result)
+})
+
+// --- Settings Handlers ---
+ipcMain.handle('get-settings', async (): Promise<AppSettings> => {
+  return getSettings()
+})
+
+ipcMain.on('save-settings', (_, settings: Partial<AppSettings>) => {
+  saveSettings(settings)
 })
 
 // --- Python Settings Handlers ---

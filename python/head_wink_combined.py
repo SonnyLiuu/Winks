@@ -34,6 +34,19 @@ WINK_R_WINK_RATIO = 0.24
 WINK_SUCC_FRAME = 2
 WINK_COOLDOWN = 0.5
 
+# --- Thread-safe globals for settings ---
+settings_lock = threading.Lock()
+# These will be updated by the stdin listener
+current_settings = {
+    "SENSITIVITY_PHYSICAL_YAW": SENSITIVITY_PHYSICAL_YAW,
+    "SENSITIVITY_PHYSICAL_PITCH": SENSITIVITY_PHYSICAL_PITCH,
+    "DEAD_ZONE_DEGREES": DEAD_ZONE_DEGREES,
+    "MAX_JOYSTICK_TILT_ANGLE": MAX_JOYSTICK_TILT_ANGLE,
+    "WINK_L_WINK_RATIO": WINK_L_WINK_RATIO,
+    "WINK_R_WINK_RATIO": WINK_R_WINK_RATIO,
+}
+
+
 # --- Shared Data Structures for Threads---
 frame_queue = queue.Queue(maxsize=2)
 result_queue = queue.Queue(maxsize=2)
@@ -143,16 +156,22 @@ def detection_and_logic_thread_func(model_path):
                 matrix = np.array(detection_result.facial_transformation_matrixes[0]).reshape(4,4)[:3,:3]
                 current_physical_yaw, current_physical_pitch = rotation_matrix_to_identified_physical_angles(matrix)
                 
+                with settings_lock:
+                    dead_zone = current_settings["DEAD_ZONE_DEGREES"]
+                    max_tilt = current_settings["MAX_JOYSTICK_TILT_ANGLE"]
+                    sens_yaw = current_settings["SENSITIVITY_PHYSICAL_YAW"]
+                    sens_pitch = current_settings["SENSITIVITY_PHYSICAL_PITCH"]
+
                 mouse_dx, mouse_dy = 0, 0
-                if abs(current_physical_yaw) > DEAD_ZONE_DEGREES:
-                    eff_yaw = current_physical_yaw - (DEAD_ZONE_DEGREES * np.sign(current_physical_yaw))
-                    spd_yaw = max(-1.0, min(1.0, eff_yaw / MAX_JOYSTICK_TILT_ANGLE))
-                    mouse_dx = -(spd_yaw * SENSITIVITY_PHYSICAL_YAW)
+                if abs(current_physical_yaw) > dead_zone:
+                    eff_yaw = current_physical_yaw - (dead_zone * np.sign(current_physical_yaw))
+                    spd_yaw = max(-1.0, min(1.0, eff_yaw / max_tilt))
+                    mouse_dx = -(spd_yaw * sens_yaw)
                 
-                if abs(current_physical_pitch) > DEAD_ZONE_DEGREES:
-                    eff_pitch = current_physical_pitch - (DEAD_ZONE_DEGREES * np.sign(current_physical_pitch))
-                    spd_pitch = max(-1.0, min(1.0, eff_pitch / MAX_JOYSTICK_TILT_ANGLE))
-                    mouse_dy = spd_pitch * SENSITIVITY_PHYSICAL_PITCH
+                if abs(current_physical_pitch) > dead_zone:
+                    eff_pitch = current_physical_pitch - (dead_zone * np.sign(current_physical_pitch))
+                    spd_pitch = max(-1.0, min(1.0, eff_pitch / max_tilt))
+                    mouse_dy = spd_pitch * sens_pitch
                 
                 if mouse_dx != 0 or mouse_dy != 0:
                     pyautogui.move(int(mouse_dx), int(mouse_dy), duration=0)
@@ -167,7 +186,11 @@ def detection_and_logic_thread_func(model_path):
                     right_ear = sum(right_ear_queue) / len(right_ear_queue)
                     current_time = time.time()
 
-                    if left_ear < WINK_L_WINK_RATIO and right_ear > WINK_R_WINK_RATIO + 0.02:
+                    with settings_lock:
+                        l_wink_ratio = current_settings["WINK_L_WINK_RATIO"]
+                        r_wink_ratio = current_settings["WINK_R_WINK_RATIO"]
+
+                    if left_ear < l_wink_ratio and right_ear > r_wink_ratio + 0.02:
                         left_frame += 1
                         if left_frame >= WINK_SUCC_FRAME and not left_wink_in_progress and (current_time - last_left_wink) > WINK_COOLDOWN:
                             left_wink_in_progress, last_left_wink, wink_text_timer = True, current_time, current_time
@@ -176,7 +199,7 @@ def detection_and_logic_thread_func(model_path):
                     else:
                         left_frame, left_wink_in_progress = 0, False
                     
-                    if right_ear < WINK_R_WINK_RATIO and left_ear > WINK_L_WINK_RATIO + 0.02:
+                    if right_ear < r_wink_ratio and left_ear > l_wink_ratio + 0.02:
                         right_frame +=1
                         if right_frame >= WINK_SUCC_FRAME and not right_wink_in_progress and (current_time - last_right_wink) > WINK_COOLDOWN:
                             right_wink_in_progress, last_right_wink, wink_text_timer = True, current_time, current_time
@@ -198,6 +221,7 @@ def detection_and_logic_thread_func(model_path):
 # --- Stdin Listener Thread ---
 def stdin_listener_thread_func():
     print("Stdin Listener: Thread starting.")
+    global current_settings
     while not stop_event.is_set():
         try:
             line = sys.stdin.readline()
@@ -205,12 +229,33 @@ def stdin_listener_thread_func():
                 print("Stdin Listener: stdin pipe closed. Assuming shutdown.")
                 stop_event.set()
                 break
+            
             command = json.loads(line.strip())
-            if isinstance(command, dict) and command.get("type") == "stop":
-                print("Stdin Listener: Received stop command. Signaling stop.")
-                stop_event.set()
-                break
-        except (json.JSONDecodeError, AttributeError, TypeError):
+            
+            if isinstance(command, dict):
+                command_type = command.get("type")
+                
+                if command_type == "stop":
+                    print("Stdin Listener: Received stop command. Signaling stop.")
+                    stop_event.set()
+                    break
+                
+                elif command_type == "update_calibration":
+                    print(f"Stdin Listener: Received calibration update: {command}")
+                    with settings_lock:
+                        current_settings["SENSITIVITY_PHYSICAL_YAW"] = float(command.get("yaw", current_settings["SENSITIVITY_PHYSICAL_YAW"]))
+                        current_settings["SENSITIVITY_PHYSICAL_PITCH"] = float(command.get("pitch", current_settings["SENSITIVITY_PHYSICAL_PITCH"]))
+                        current_settings["DEAD_ZONE_DEGREES"] = float(command.get("deadZone", current_settings["DEAD_ZONE_DEGREES"]))
+                        current_settings["MAX_JOYSTICK_TILT_ANGLE"] = float(command.get("tiltAngle", current_settings["MAX_JOYSTICK_TILT_ANGLE"]))
+
+                elif command_type == "update_sensitivities":
+                    print(f"Stdin Listener: Received sensitivities update: {command}")
+                    with settings_lock:
+                        current_settings["WINK_L_WINK_RATIO"] = float(command.get("leftWinkSensitivity", current_settings["WINK_L_WINK_RATIO"]))
+                        current_settings["WINK_R_WINK_RATIO"] = float(command.get("rightWinkSensitivity", current_settings["WINK_R_WINK_RATIO"]))
+
+        except (json.JSONDecodeError, AttributeError, TypeError, ValueError) as e:
+            print(f"Stdin Listener: Error processing command - {e}")
             continue
     print("Stdin Listener: Finished.")
 
@@ -259,8 +304,11 @@ if __name__ == '__main__':
                         landmark_drawing_spec=mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=1, circle_radius=1),
                         connection_drawing_spec=mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=1))
 
-            yaw_status = "Moving" if abs(current_physical_yaw) > DEAD_ZONE_DEGREES else "Dead Zone"
-            pitch_status = "Moving" if abs(current_physical_pitch) > DEAD_ZONE_DEGREES else "Dead Zone"
+            with settings_lock:
+                dead_zone = current_settings["DEAD_ZONE_DEGREES"]
+
+            yaw_status = "Moving" if abs(current_physical_yaw) > dead_zone else "Dead Zone"
+            pitch_status = "Moving" if abs(current_physical_pitch) > dead_zone else "Dead Zone"
             cv2.putText(frame_bgr, f"Yaw: {current_physical_yaw:.1f} ({yaw_status})", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
             cv2.putText(frame_bgr, f"Pitch: {current_physical_pitch:.1f} ({pitch_status})", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
             
