@@ -1,37 +1,29 @@
-Project structure is as follows:
-C++ code will be compiled as a library
+Accessiblilty eye and head-tracking desktop application
+Built as a UCF Senior Design project (Spring–Summer 2025)
 
-****Before running, update your dependencies ***
+Overview
+Winks is an accessibility-focused desktop application that enables users to interact with their computer using head movement and winks. It provides an alternative input method for individuals with limited motor abilities, combining real-time computer vision with a lightweight menu and overlay.
 
-(1)
-npm install -g npm@latest
-(if on mac) sudo npm install -g npm@latest
+Key features:
+Eye & Head Tracking powered by MediaPipe and OpenCV
+Wink-based click/selection detection with Python
+Electron desktop application for cross-platform use
+MERN stack integration for modular architecture
+UI designed for accessibility
 
-(2)
-update node
-https://nodejs.org/
+Tech Stack
+Frontend: Next.js + Electron
+Backend: Node.js
+Computer Vision: Python + OpenCV + MediaPipe
+Packaging: Electron (Windows/macOS/Linux)
 
-(3)
-update all globally installed packages
-npm update -g
+Contributors:
+This project was developed as part of UCF Senior Design (2025)
+  Sonny Liu
+  Danielle Andal
+  Jordan Sanchez
+  Joshua Bartz
+  Brett Anderson
 
-(4)
-update git
-https://git-scm.com/downloads
-
-
-Instructions to run:
-(1) Install project dependencies
-  npm i
-
-(2) Install react app dependencies
-  cd WinksUI
-  npm i
-
-(3) build the app
-  npm run build
-
-(4) Run the app
-  npm run start
-
-
+Note: This repository is for academic and portfolio showcase purposes only.
+All rights reserved by the original authors.
