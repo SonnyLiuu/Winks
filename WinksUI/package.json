@@ -9,18 +9,25 @@
     "format": "prettier --write .",
     "lint": "eslint --cache --ext .ts,.tsx src",
     "lint:fix": "eslint --cache --fix --ext .ts,.tsx src",
-    "typecheck": "tsc --noEmit",
 
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:unit": "vitest run --dir src/main",
-    "start": "electron-vite preview",
+
     "dev": "electron-vite dev",
+    "start": "electron-vite preview",
     "build": "npm run typecheck && electron-vite build",
+
+    "dist:win": "npm run build && electron-builder --win",
+    "release:win": "npm run build && electron-builder --win --publish always",
+
     "postinstall": "electron-builder install-app-deps",
-    "build:win": "npm run build && electron-builder --win",
-    "build:mac": "npm run build && electron-builder --mac",
-    "build:linux": "npm run build && electron-builder --linux"
+
+    "release:patch": "npm version patch -m \"chore(release): %s\"",
+    "release:minor": "npm version minor -m \"chore(release): %s\"",
+    "release:major": "npm version major -m \"chore(release): %s\"",
+    "prerelease": "npm version prerelease --preid=beta -m \"chore(release): %s\""
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
@@ -66,32 +73,63 @@
   "build": {
     "appId": "com.winks.app",
     "productName": "Winks",
+
+    "directories": {
+      "buildResources": "build"
+    },
+
     "files": [
       "out/**/*"
     ],
+
     "asarUnpack": [
-      "**/node_modules/@hurdlegroup/robotjs/**/*"
+      "**/node_modules/@hurdlegroup/robotjs/**/*",
+      "resources/**"
     ],
+
     "extraResources": [
-      {
-        "from": "../python",
-        "to": "python"
-      },
-      {
-        "from": "./python_runtime",
-        "to": "python_runtime"
-      }
+      { "from": "../python", "to": "python" },
+      { "from": "./python_runtime", "to": "python_runtime" }
     ],
+
     "win": {
       "target": "nsis",
-      "icon": "resources/icon.png"
+      "executableName": "Winks"
     },
+
+    "nsis": {
+      "artifactName": "${productName}-setup.${ext}",
+      "shortcutName": "${productName}",
+      "uninstallDisplayName": "${productName}",
+      "createDesktopShortcut": "always"
+    },
+
     "mac": {
       "target": "dmg",
-      "icon": "resources/icon.icns"
+      "icon": "resources/icon.icns",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "NSCameraUsageDescription": "Application requests access to the device's camera.",
+        "NSMicrophoneUsageDescription": "Application requests access to the device's microphone.",
+        "NSDocumentsFolderUsageDescription": "Application requests access to the user's Documents folder.",
+        "NSDownloadsFolderUsageDescription": "Application requests access to the user's Downloads folder."
+      },
+      "notarize": false
     },
+
     "linux": {
-      "target": "AppImage"
+      "target": ["AppImage", "snap", "deb"],
+      "category": "Utility"
+    },
+
+    "appImage": {
+      "artifactName": "${name}-install.${ext}"
+    },
+
+    "publish": {
+      "provider": "github",
+      "owner": "SonnyLiuu",
+      "repo": "Winks"
     }
   }
 }

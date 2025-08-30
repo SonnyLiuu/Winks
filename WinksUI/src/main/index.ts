@@ -4,10 +4,12 @@ import { createMainWindow, createOverlayWindow } from './windows'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { createOverlayGetClick } from './overlayGetClick'
 import { scanRegistry } from './OSProgramScanning'
+import { autoUpdater } from 'electron-updater'
 import * as path from 'node:path'
 import { JSDOM } from 'jsdom'
 import fs from 'node:fs'
 import 'dotenv/config'
+
 
 // --- Consolidated Imports ---
 import {
@@ -19,15 +21,16 @@ import {
 } from './overlay'
 import { connectToDatabase, createUser, verifyUser } from './database'
 
+// Debugging
+const DEBUG = process.env.WINKS_DEBUG === '1'; // set to "1" only when you want logs
+const dlog = (...a: any[]) => { if (DEBUG) console.log(...a) }
+const derr = (...a: any[]) => { if (DEBUG) console.error(...a) }
+
 // --- Global Variables ---
 let pythonProcess: ChildProcessWithoutNullStreams | undefined
 let mainWindow: BrowserWindow | null
 let overlayWindow: BrowserWindow | null
 let isQuitting = false
-let loggedPythonPaths = false;
-
-// This handles squirrel startup events on Windows for the installer.
-if (process.platform === 'win32' && process.env.SQUIRREL_INSTALL) app.quit()
 
 // --- Helper Functions to get File Paths ---
 function resolveExisting(...candidates: string[]): string {
@@ -60,8 +63,9 @@ function getModelPath(): string {
   return path.join(process.resourcesPath, 'python', 'face_landmarker.task')
 }
 
+// region app.whenReady
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.electron')
+  electronApp.setAppUserModelId('com.winks.app')
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
@@ -103,34 +107,30 @@ app.whenReady().then(() => {
   const exe = getPythonExecutablePath()
   const script = getPythonScriptPath()
   const model = getModelPath()
-
-  if (!loggedPythonPaths) {
-    console.log("Electron: Python exe:", exe)
-    console.log("Electron: Python script:", script)
-    console.log("Electron: Model file:", model)
-    console.log("Electron: app.isPackaged =", app.isPackaged)
-    loggedPythonPaths = true
-  }
   
   pythonProcess = spawn(exe, [script, model], {
     stdio: ['pipe', 'pipe', 'pipe'],
     env: { ...process.env } // keep PATH/venv vars
   })
 
-  pythonProcess.stdout.on('data', (data: Buffer) =>
-    console.log(`Python: ${data.toString().trim()}`)
-  )
-  pythonProcess.stderr.on('data', (data: Buffer) =>
-    console.error(`Python stderr: ${data.toString().trim()}`)
-  )
+  // stdout/stderr (only when DEBUG)
+  if (DEBUG) {
+    pythonProcess.stdout.on('data', (data: Buffer) => {
+      console.log(`Python: ${data.toString().trim()}`)
+    })
+    pythonProcess.stderr.on('data', (data: Buffer) => {
+      console.error(`Python stderr: ${data.toString().trim()}`)
+    })
+  }
+
   pythonProcess.on('close', (code: number) => {
-    console.log(`Python process exited with code ${code}`)
     if (code !== 0 && !isQuitting) {
+      mainWindow?.webContents.send('python:exit', code)
       app.quit()
     }
   })
-  pythonProcess.on('error', (err: Error) => {
-    console.error(`Failed to start Python process: ${err.message}`)
+  pythonProcess.on('error', (_err: Error) => {
+    mainWindow?.webContents.send('python:error')
     app.quit()
   })
 
@@ -143,6 +143,35 @@ app.whenReady().then(() => {
   // Start the watcher after windows are created
   startOverlayProximityWatcher()
 
+  // ---- Auto Update wiring ----
+  if (app.isPackaged) {
+    autoUpdater.logger = null;        // <-- turns off electron-updater logging
+    autoUpdater.autoDownload = true;
+  
+    // Send status to renderer (keeps your UI events, no console spam)
+    autoUpdater.on('checking-for-update', () =>
+      mainWindow?.webContents.send('update:status', 'checking')
+    )
+    autoUpdater.on('update-available', (info) =>
+      mainWindow?.webContents.send('update:status', 'available', info)
+    )
+    autoUpdater.on('update-not-available', () =>
+      mainWindow?.webContents.send('update:status', 'none')
+    )
+    autoUpdater.on('download-progress', (p) =>
+      mainWindow?.webContents.send('update:progress', p)
+    )
+    autoUpdater.on('update-downloaded', () =>
+      mainWindow?.webContents.send('update:status', 'ready')
+    )
+    autoUpdater.on('error', (err) =>
+      mainWindow?.webContents.send('update:status', 'error', String(err))
+    )
+  
+    // Kick off a check now (only in prod)
+    autoUpdater.checkForUpdatesAndNotify()
+  }
+  
   if (mainWindow) {
     // This ensures that if the user closes the main settings window,
     // the overlay window and the entire app will close too.
@@ -222,14 +251,11 @@ ipcMain.on('fetch-website-info', async (event, url) => {
     if (bestIcon) {
       bestIcon = new URL(bestIcon, fullUrl).href
     } else {
-      // FIX: Corrected the template literal syntax
       bestIcon = `https://www.google.com/s2/favicons?sz=64&domain_url=${fullUrl}`
     }
 
-    console.log(bestIcon)
     event.sender.send('website-info-reply', { name: title, icon: bestIcon })
-  } catch (error) {
-    console.error('Failed to fetch website info:', error)
+  } catch (_error) {
     event.sender.send('website-info-reply', null)
   }
 })
@@ -252,7 +278,6 @@ ipcMain.on('add-website', (_event, websiteData) => {
 
     const alreadyExists = library.some((item: LibraryItem) => item.path === websiteData.url)
     if (alreadyExists) {
-      console.log('Website already exists in library.')
       return
     }
 
@@ -266,9 +291,8 @@ ipcMain.on('add-website', (_event, websiteData) => {
 
     const updatedLibrary = [...library, newWebsite]
     fs.writeFileSync(libraryFilePath, JSON.stringify(updatedLibrary, null, 2))
-    console.log('Website added successfully.')
   } catch (error) {
-    console.error('Failed to add website:', error)
+    derr('Failed to add website:', error)
   }
 })
 
@@ -279,12 +303,11 @@ ipcMain.on('launch-website', async (_event, url) => {
     fullUrl = `https://${fullUrl}`
   }
 
-  console.log(`Attempting to launch website: ${fullUrl}`)
   try {
     // shell.openExternal is the safe and correct way to open web links
     await shell.openExternal(fullUrl)
   } catch (e) {
-    console.error('Error launching website:', e)
+    derr('Error launching website:', e)
   }
 })
 
@@ -300,7 +323,6 @@ const getLibraryFilePath = () => {
 // Listener for adding new programs to the library
 ipcMain.on('add-programs', (_event, programsToAdd: LibraryItem[]) => {
   const libraryFilePath = getLibraryFilePath()
-  console.log(`Received request to add ${programsToAdd.length} programs.`)
 
   try {
     let existingLibrary = []
@@ -308,7 +330,7 @@ ipcMain.on('add-programs', (_event, programsToAdd: LibraryItem[]) => {
       try {
         existingLibrary = JSON.parse(fs.readFileSync(libraryFilePath, 'utf-8'))
       } catch {
-        console.error('Could not parse library.json, starting fresh.')
+        derr('Could not parse library.json, starting fresh.')
         existingLibrary = []
       }
     }
@@ -320,20 +342,16 @@ ipcMain.on('add-programs', (_event, programsToAdd: LibraryItem[]) => {
     const newPrograms = programsToAdd.filter((program) => !existingPaths.has(program.path))
 
     if (newPrograms.length === 0) {
-      console.log('No new programs to add. All selected programs already exist in the library.')
       return
     }
-
-    console.log(`Adding ${newPrograms.length} new unique programs.`)
 
     // 3. Combine the old library with the new, unique programs.
     const updatedLibrary = [...existingLibrary, ...newPrograms]
 
     // 4. Write the updated library back to the file.
     fs.writeFileSync(libraryFilePath, JSON.stringify(updatedLibrary, null, 2))
-    console.log('Library saved successfully with new programs.')
   } catch (error) {
-    console.error('Failed to save library:', error)
+    derr('Failed to save library:', error)
   }
 })
 
@@ -345,7 +363,7 @@ ipcMain.on('get-library', (event) => {
     try {
       library = JSON.parse(fs.readFileSync(libraryFilePath, 'utf-8'))
     } catch (error) {
-      console.error('Failed to read or parse library file:', error)
+      derr('Failed to read or parse library file:', error)
       library = [] // Reset to empty on error
     }
   }
@@ -355,46 +373,41 @@ ipcMain.on('get-library', (event) => {
 
 // Listener to launch a program from its path
 ipcMain.on('launch-program', async (_event, programPath) => {
-  console.log(`Attempting to launch program at: ${programPath}`)
   try {
     // shell.openPath is the safe way to open executables, files, or URLs
     const error = await shell.openPath(programPath)
     if (error) {
-      console.error(`Failed to launch program: ${error}`)
+      derr(`Failed to launch program: ${error}`)
     }
   } catch (e) {
-    console.error('Error launching program:', e)
+    derr('Error launching program:', e)
   }
 })
 
 let isScanning = false
 ipcMain.on('scan-for-programs', async (event) => {
   if (isScanning) {
-    console.log('Scan request ignored, another scan is already in progress.')
+    dlog('Scan request ignored, another scan is already in progress.')
     return
   }
   isScanning = true
-  console.log('Main process received "scan-for-programs" request. Starting registry scan.')
 
   try {
     // Replace mock data with a call to the new registry scan function
     await scanRegistry(event)
   } catch (error) {
-    console.error('An error occurred during the program scan:', error)
+    derr('An error occurred during the program scan:', error)
   } finally {
     // Once the scan is complete, send the completion event and reset the flag
     event.sender.send('scan-complete')
     isScanning = false
-    console.log('Scan complete.')
   }
 })
 
 ipcMain.on('remove-programs', (_event, programIdsToRemove: number[]) => {
   const libraryFilePath = getLibraryFilePath()
-  console.log(`Received request to remove ${programIdsToRemove.length} programs.`)
 
   if (!fs.existsSync(libraryFilePath)) {
-    console.log('Library file does not exist, nothing to remove.')
     return
   }
 
@@ -406,18 +419,17 @@ ipcMain.on('remove-programs', (_event, programIdsToRemove: number[]) => {
 
     // Write the new, smaller library back to the file
     fs.writeFileSync(libraryFilePath, JSON.stringify(updatedLibrary, null, 2))
-    console.log('Programs removed successfully. Updated library saved.')
   } catch (error) {
-    console.error('Failed to removed programs from library:', error)
+    derr('Failed to removed programs from library:', error)
   }
 })
 
 //endregion program adding
 
-//region overlay functions
+
 
 // ===================================================================
-// --- IPC Handlers ---
+// region IPC Handlers
 // ===================================================================
 
 // --- Database Handlers ---
@@ -428,6 +440,13 @@ ipcMain.on('signup-user', async (event, { email, password }) => {
 ipcMain.on('login-user', async (event, { email, password }) => {
   const result = await verifyUser(email, password)
   event.reply('login-response', result)
+})
+
+// --- Auto-update IPC Handlers ---
+ipcMain.handle('update:check', () => autoUpdater.checkForUpdatesAndNotify())
+ipcMain.handle('update:install', () => {
+  autoUpdater.quitAndInstall()
+  return { ok: true }
 })
 
 // --- Python Settings Handlers ---
@@ -448,7 +467,7 @@ ipcMain.handle('update-calibration', async (_, calibrationData: any) => {
   return { success: false, error: 'Python process not active.' }
 })
 
-// --- Overlay UI Handlers ---
+// Overlay UI Handlers
 ipcMain.on('get-cursor-position', (_, coordinateType: string) => {
   saveCursorPosition(coordinateType)
 })
@@ -461,5 +480,3 @@ ipcMain.on('overlay-get-click', (_, arg: string) => {
 ipcMain.on('keyboard', () => {
   openOnScreenKeyboard()
 })
-
-//endregion overlay functions
