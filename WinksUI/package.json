@@ -1,6 +1,6 @@
 {
   "name": "winksui",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "An Electron application with React and TypeScript",
   "main": "out/main/index.js",
   "author": "example.com",
@@ -19,10 +19,10 @@
     "dist:win": "npm run build && electron-builder --win",
     "release:win": "npm run build && electron-builder --win --publish always",
     "postinstall": "electron-builder install-app-deps",
-    "release:patch": "npm version patch -m \"chore(release): %s\"",
-    "release:minor": "npm version minor -m \"chore(release): %s\"",
-    "release:major": "npm version major -m \"chore(release): %s\"",
-    "prerelease": "npm version prerelease --preid=beta -m \"chore(release): %s\""
+    "release:patch": "npm version patch --git-tag-version=true --tag-version-prefix=v -m \"chore(release): %s\"",
+    "release:minor": "npm version minor --git-tag-version=true --tag-version-prefix=v -m \"chore(release): %s\"",
+    "release:major": "npm version major --git-tag-version=true --tag-version-prefix=v -m \"chore(release): %s\"",
+    "prerelease":     "npm version prerelease --preid=beta --git-tag-version=true --tag-version-prefix=v -m \"chore(release): %s\""
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
