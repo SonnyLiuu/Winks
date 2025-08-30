@@ -1,6 +1,6 @@
 {
   "name": "winksui",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "An Electron application with React and TypeScript",
   "main": "out/main/index.js",
   "author": "example.com",
@@ -9,21 +9,16 @@
     "format": "prettier --write .",
     "lint": "eslint --cache --ext .ts,.tsx src",
     "lint:fix": "eslint --cache --fix --ext .ts,.tsx src",
-
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:unit": "vitest run --dir src/main",
-
     "dev": "electron-vite dev",
     "start": "electron-vite preview",
     "build": "npm run typecheck && electron-vite build",
-
     "dist:win": "npm run build && electron-builder --win",
     "release:win": "npm run build && electron-builder --win --publish always",
-
     "postinstall": "electron-builder install-app-deps",
-
     "release:patch": "npm version patch -m \"chore(release): %s\"",
     "release:minor": "npm version minor -m \"chore(release): %s\"",
     "release:major": "npm version major -m \"chore(release): %s\"",
@@ -36,7 +31,6 @@
     "@spaceymonk/react-radial-menu": "^2.0.6",
     "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.1",
-    "electron-squirrel-startup": "^1.0.1",
     "electron-updater": "^6.3.9",
     "jsdom": "^26.1.0",
     "mongodb": "^6.17.0",
@@ -73,37 +67,37 @@
   "build": {
     "appId": "com.winks.app",
     "productName": "Winks",
-
     "directories": {
       "buildResources": "build"
     },
-
     "files": [
       "out/**/*"
     ],
-
     "asarUnpack": [
       "**/node_modules/@hurdlegroup/robotjs/**/*",
       "resources/**"
     ],
-
     "extraResources": [
-      { "from": "../python", "to": "python" },
-      { "from": "./python_runtime", "to": "python_runtime" }
+      {
+        "from": "../python",
+        "to": "python"
+      },
+      {
+        "from": "./python_runtime",
+        "to": "python_runtime"
+      }
     ],
-
     "win": {
       "target": "nsis",
       "executableName": "Winks"
     },
-
     "nsis": {
       "artifactName": "${productName}-setup.${ext}",
       "shortcutName": "${productName}",
       "uninstallDisplayName": "${productName}",
-      "createDesktopShortcut": "always"
+      "createDesktopShortcut": "always",
+      "differentialPackage": true
     },
-
     "mac": {
       "target": "dmg",
       "icon": "resources/icon.icns",
@@ -116,16 +110,17 @@
       },
       "notarize": false
     },
-
     "linux": {
-      "target": ["AppImage", "snap", "deb"],
+      "target": [
+        "AppImage",
+        "snap",
+        "deb"
+      ],
       "category": "Utility"
     },
-
     "appImage": {
       "artifactName": "${name}-install.${ext}"
     },
-
     "publish": {
       "provider": "github",
       "owner": "SonnyLiuu",
