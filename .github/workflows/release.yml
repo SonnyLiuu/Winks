@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'            # e.g. v1.2.3 or v1.2.3-beta.1
+  workflow_dispatch:     # allow manual runs from the Actions tab
+
+permissions:
+  contents: write        # needed to create Releases & upload assets
+
+jobs:
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build (renderer/main)
+        run: npm run build
+
+      - name: Package & Publish (electron-builder)
+        run: npx electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # built-in token
+          # Optional: Windows code signing (recommended):
+          # CSC_LINK: ${{ secrets.WINDOWS_CERT_PFX }}          # base64 of .pfx
+          # CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERT_PASS }}
+
+  # Uncomment to add Linux builds (no signing required by default)
+  # linux:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with: { fetch-depth: 0 }
+  #     - uses: actions/setup-node@v4
+  #       with: { node-version: 20, cache: 'npm' }
+  #     - run: npm ci
+  #     - run: npm run build
+  #     - run: npx electron-builder --linux --publish always
+  #       env:
+  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # macOS builds require signing & (usually) notarization. Add later when ready.
