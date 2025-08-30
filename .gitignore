@@ -1,5 +1,9 @@
 node_modules/
-/client.old/.next/
+venv/
+out/
+dist/
+
+WinksUI/.env
 WinksUI/node_modules
 WinksUI/dist
 WinksUI/out
@@ -10,6 +14,4 @@ WinksUI/python_runtime
 WinksUI/py_wheels
 python/_internal
 
-/client/.next/
-/.idea/.gitignore
-/.idea/vcs.xml
+

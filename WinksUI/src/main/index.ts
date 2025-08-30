@@ -1,13 +1,13 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
-import { electronApp, optimizer } from '@electron-toolkit/utils'
-import fs from 'fs'
+import { app, BrowserWindow, ipcMain, shell, session } from 'electron'
+import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 import { createMainWindow, createOverlayWindow } from './windows'
+import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { createOverlayGetClick } from './overlayGetClick'
 import { scanRegistry } from './OSProgramScanning'
-import { session } from 'electron'
+import * as path from 'node:path'
 import { JSDOM } from 'jsdom'
-import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
-import * as path from 'path'
+import fs from 'node:fs'
+import 'dotenv/config'
 
 // --- Consolidated Imports ---
 import {
@@ -24,23 +24,40 @@ let pythonProcess: ChildProcessWithoutNullStreams | undefined
 let mainWindow: BrowserWindow | null
 let overlayWindow: BrowserWindow | null
 let isQuitting = false
+let loggedPythonPaths = false;
 
 // This handles squirrel startup events on Windows for the installer.
-if (require('electron-squirrel-startup')) app.quit()
+if (process.platform === 'win32' && process.env.SQUIRREL_INSTALL) app.quit()
 
 // --- Helper Functions to get File Paths ---
-function getPythonScriptPath(): string {
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'python', 'head_wink_combined.py')
+function resolveExisting(...candidates: string[]): string {
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p
   }
-  return path.join(__dirname, '..', '..', '..', 'python', 'head_wink_combined.py')
+  return candidates[0] // fallback (even if missing) so errors/logs show what we tried
+}
+
+function getPythonScriptPath(): string {
+  if (!app.isPackaged) {
+    // Support either layout:
+    // - python folder at repo root: Winks/python/...
+    // - python folder inside WinksUI: Winks/WinksUI/python/...
+    return resolveExisting(
+      path.join(process.cwd(), '..', 'python', 'head_wink_combined.py'),
+      path.join(process.cwd(), 'python', 'head_wink_combined.py')
+    )
+  }
+  return path.join(process.resourcesPath, 'python', 'head_wink_combined.py')
 }
 
 function getModelPath(): string {
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'python', 'face_landmarker.task')
+  if (!app.isPackaged) {
+    return resolveExisting(
+      path.join(process.cwd(), '..', 'python', 'face_landmarker.task'),
+      path.join(process.cwd(), 'python', 'face_landmarker.task')
+    )
   }
-  return path.join(__dirname, '..', '..', '..', 'python', 'face_landmarker.task')
+  return path.join(process.resourcesPath, 'python', 'face_landmarker.task')
 }
 
 app.whenReady().then(() => {
@@ -56,25 +73,48 @@ app.whenReady().then(() => {
 
   // --- Python Script Spawning ---
   function getPythonExecutablePath(): string {
-    if (app.isPackaged) {
-      return path.join(process.resourcesPath, 'python_runtime', 'python.exe')
+    if (!app.isPackaged) {
+      // 1) explicit override via .env
+      const envPy = process.env.DEV_PYTHON
+      if (envPy && fs.existsSync(envPy)) return envPy
+  
+      // 2) common local dev runtimes
+      const guesses = [
+        // venv at repo root: Winks/venv
+        path.join(process.cwd(), '..', 'venv', 'Scripts', 'python.exe'),
+        path.join(process.cwd(), '..', 'venv', 'bin', 'python3'),
+        // python_runtime checked into WinksUI/python_runtime
+        path.join(process.cwd(), 'python_runtime', 'python.exe'),
+        path.join(process.cwd(), 'python_runtime', 'bin', 'python3')
+      ]
+      const found = guesses.find(fs.existsSync)
+      if (found) return found
+  
+      // 3) PATH fallback
+      return process.platform === 'win32' ? 'python' : 'python3'
     }
-
-    const devRuntimeFolder = path.join(__dirname, '..', '..', 'python_runtime')
-
-    if (fs.existsSync(devRuntimeFolder)) {
-      return path.join(devRuntimeFolder, 'python.exe')
-    }
-
-    return process.platform === 'win32' ? 'python' : 'python3'
+  
+    // packaged: bundled runtime in resources
+    return process.platform === 'win32'
+      ? path.join(process.resourcesPath, 'python_runtime', 'python.exe')
+      : path.join(process.resourcesPath, 'python_runtime', 'bin', 'python3')
   }
-  const pythonScriptFullPath = getPythonScriptPath()
-  const modelFullPath = getModelPath()
+  
+  const exe = getPythonExecutablePath()
+  const script = getPythonScriptPath()
+  const model = getModelPath()
 
-  console.log(`Electron: Spawning Python process at ${pythonScriptFullPath}`)
-
-  pythonProcess = spawn(getPythonExecutablePath(), [pythonScriptFullPath, modelFullPath], {
-    stdio: ['pipe', 'pipe', 'pipe']
+  if (!loggedPythonPaths) {
+    console.log("Electron: Python exe:", exe)
+    console.log("Electron: Python script:", script)
+    console.log("Electron: Model file:", model)
+    console.log("Electron: app.isPackaged =", app.isPackaged)
+    loggedPythonPaths = true
+  }
+  
+  pythonProcess = spawn(exe, [script, model], {
+    stdio: ['pipe', 'pipe', 'pipe'],
+    env: { ...process.env } // keep PATH/venv vars
   })
 
   pythonProcess.stdout.on('data', (data: Buffer) =>
@@ -132,19 +172,17 @@ app.whenReady().then(() => {
 
 // --- App Shutdown Handler ---
 app.on('window-all-closed', () => {
-  stopOverlayProximityWatcher() // Stop the timer before quitting
+  stopOverlayProximityWatcher()
   if (process.platform !== 'darwin') {
-    app.quit()
-  }
-
-  if (pythonProcess) {
-    pythonProcess.stdin.write(JSON.stringify({ type: 'stop' }) + '\n')
+    if (pythonProcess?.stdin?.writable) {
+      pythonProcess.stdin.write(JSON.stringify({ type: 'stop' }) + '\n')
+    }
     setTimeout(() => pythonProcess?.kill('SIGTERM'), 1000)
+    app.quit()
   }
 })
 
 //region website adding
-
 ipcMain.on('fetch-website-info', async (event, url) => {
   let fullUrl = url
   if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
@@ -260,7 +298,7 @@ const getLibraryFilePath = () => {
 }
 
 // Listener for adding new programs to the library
-ipcMain.on('add-programs', (_event, programsToAdd) => {
+ipcMain.on('add-programs', (_event, programsToAdd: LibraryItem[]) => {
   const libraryFilePath = getLibraryFilePath()
   console.log(`Received request to add ${programsToAdd.length} programs.`)
 

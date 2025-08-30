@@ -3,6 +3,7 @@
 Winks is an accessibility-focused desktop application that enables users to interact with their computer using head movement and winks. It provides an alternative input method for individuals with limited motor abilities, combining real-time computer vision with a lightweight menu and overlay.
 
 ## Features
+
 - Eye & Head Tracking powered by MediaPipe and OpenCV
 - Wink-based click/selection detection with Python
 - Electron desktop application for cross-platform use
@@ -10,18 +11,26 @@ Winks is an accessibility-focused desktop application that enables users to inte
 - UI designed for accessibility
 
 ## Tech Stack
+
 - **Frontend:** Next.js + Electron
 - **Backend:** Node.js
 - **Computer Vision:** Python + OpenCV + MediaPipe
 - **Packaging:** Electron (Windows/macOS/Linux)
 
+## How to Run
+
+Download Winks from:
+
 ## Contributors
+
 This project was developed as part of **UCF Senior Design (2025)**:
+
 - Sonny Liu
 - Danielle Andal
 - Jordan Sanchez
 - Joshua Bartz
 - Brett Anderson
+
 ---
 
 📌 **Note:** This repository is for **academic and portfolio showcase purposes only**.

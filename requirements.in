@@ -1,0 +1,7 @@
+# Pin only what you must; let the solver pick transitive versions
+mediapipe
+opencv-python
+pyautogui
+# add others your code imports explicitly, e.g.:
+# numpy
+# protobuf
