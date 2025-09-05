@@ -19,7 +19,7 @@ Winks is an accessibility-focused desktop application that enables users to inte
 
 ## How to Run
 
-Download Winks from:
+Download Winks from: https://github.com/SonnyLiuu/Winks/releases
 
 ## Contributors
 
