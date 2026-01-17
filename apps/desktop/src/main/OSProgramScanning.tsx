@@ -7,7 +7,7 @@ export async function scanRegistry(event) {
   const registryKeys = [
     'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
     'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
-    'HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall'
+    'HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
   ]
 
   const foundPrograms = new Set<string>()
@@ -17,7 +17,7 @@ export async function scanRegistry(event) {
     try {
       const regKey = new WinReg({
         hive: key.split('\\')[0],
-        key: `\\${key.split('\\').slice(1).join('\\')}`
+        key: `\\${key.split('\\').slice(1).join('\\')}`,
       })
       const items = await new Promise<WinReg.RegistryItem[]>((resolve, reject) => {
         regKey.keys((err, items) => {
@@ -87,7 +87,7 @@ export async function scanRegistry(event) {
             id: programIdCounter++,
             name: displayName,
             icon: icon.toDataURL(),
-            path: executablePath
+            path: executablePath,
           }
           event.sender.send('program-found', program)
         }

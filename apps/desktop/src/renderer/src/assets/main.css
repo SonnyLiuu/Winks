@@ -32,7 +32,6 @@ code {
   margin-bottom: 80px;
 }
 
-
 :root {
   --__reactRadialMenu__rotate: 45deg;
 }
@@ -44,7 +43,6 @@ code {
 .__rrm-content {
   rotate: calc(-1 * var(--__reactRadialMenu__rotate));
 }
-
 
 .logo {
   margin-bottom: 20px;
@@ -162,8 +160,6 @@ code {
     border: none;
   }
 }
-
-
 
 @media (max-width: 720px) {
   .text {

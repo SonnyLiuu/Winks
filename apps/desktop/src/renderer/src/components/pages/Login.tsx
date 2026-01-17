@@ -13,21 +13,23 @@ export default function LoginPage({
   onSwitchToSignup,
   onGoBack,
   onSwitchToForgotPassword,
-  onLoginSuccess
+  onLoginSuccess,
 }: LoginPageProps): React.JSX.Element {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
   const navigate = useNavigate()
 
+  type AuthResponse = { ok: true } | { ok: false; error: string }
+
   useEffect(() => {
-    const cleanup = window.electron.on('login-response', (response: any) => {
-      if (response.success) {
+    const cleanup = window.electron.on('login-response', (response: AuthResponse) => {
+      if (response.ok) {
         setMessage('Login successful!')
         onLoginSuccess()
         navigate('/dashboard')
       } else {
-        setMessage(`Error: ${response.message}`)
+        setMessage(`Error: ${response.error}`)
       }
     })
     return () => {

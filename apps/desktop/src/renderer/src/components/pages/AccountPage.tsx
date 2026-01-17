@@ -10,9 +10,11 @@ type AccountPageProps = {
 
 export default function AccountPage({
   onLoginSuccess,
-  onSignupSuccess
+  onSignupSuccess,
 }: AccountPageProps): React.JSX.Element {
-  const [currentView, setCurrentView] = useState<'initial' | 'login' | 'signup' | 'forgotPassword'>('initial')
+  const [currentView, setCurrentView] = useState<'initial' | 'login' | 'signup' | 'forgotPassword'>(
+    'initial'
+  )
 
   const handleGoBack = () => setCurrentView('initial')
   const handleSwitchToForgotPassword = () => setCurrentView('forgotPassword')
@@ -77,19 +79,19 @@ const containerStyle: React.CSSProperties = {
   backgroundColor: '#ffffff',
   borderRadius: '16px',
   boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-  fontFamily: 'Poppins, sans-serif'
+  fontFamily: 'Poppins, sans-serif',
 }
 
 const headingStyle: React.CSSProperties = {
   fontWeight: 700,
   fontSize: '32px',
-  marginBottom: '16px'
+  marginBottom: '16px',
 }
 
 const subtextStyle: React.CSSProperties = {
   fontSize: '16px',
   color: '#555',
-  marginBottom: '8px'
+  marginBottom: '8px',
 }
 
 const infoStyle: React.CSSProperties = {
@@ -97,13 +99,13 @@ const infoStyle: React.CSSProperties = {
   color: '#777',
   maxWidth: '360px',
   margin: '0 auto 40px',
-  lineHeight: '1.6'
+  lineHeight: '1.6',
 }
 
 const buttonGroupStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'center',
-  gap: '20px'
+  gap: '20px',
 }
 
 const baseButtonStyle: React.CSSProperties = {
@@ -113,18 +115,18 @@ const baseButtonStyle: React.CSSProperties = {
   fontSize: '16px',
   fontWeight: 600,
   cursor: 'pointer',
-  transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
 }
 
 const signupBtnStyle: React.CSSProperties = {
   ...baseButtonStyle,
   background: 'rgb(110, 210, 237)',
   color: '#fff',
-  boxShadow: '0 4px 12px rgba(0, 114, 255, 0.3)'
+  boxShadow: '0 4px 12px rgba(0, 114, 255, 0.3)',
 }
 
 const loginBtnStyle: React.CSSProperties = {
   ...baseButtonStyle,
   background: '#e0e0e0',
-  color: '#333'
+  color: '#333',
 }

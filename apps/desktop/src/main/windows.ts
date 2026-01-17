@@ -16,8 +16,8 @@ export function createMainWindow(): BrowserWindow {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
-    }
+      sandbox: false,
+    },
   })
 
   console.log(join(__dirname, '../preload/index.js'))
@@ -63,8 +63,8 @@ export function createOverlayWindow(): BrowserWindow {
     skipTaskbar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
-    }
+      sandbox: false,
+    },
   })
   //overlayWindow.webContents.openDevTools({ mode: 'detach' })
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {

@@ -1,16 +1,16 @@
-import { useState } from 'react';
+import { useState } from 'react'
 
 export default function SettingsPage() {
-  const [leftSensitivity, setLeftSensitivity] = useState(0.5);
-  const [rightSensitivity, setRightSensitivity] = useState(0.5);
+  const [leftSensitivity, setLeftSensitivity] = useState(0.5)
+  const [rightSensitivity, setRightSensitivity] = useState(0.5)
 
   const handleSave = () => {
     console.log('Saving wink sensitivity settings:', {
       left: leftSensitivity,
       right: rightSensitivity,
-    });
-    alert('Settings saved (connect to DB)');
-  };
+    })
+    alert('Settings saved (connect to DB)')
+  }
 
   return (
     <div
@@ -24,7 +24,9 @@ export default function SettingsPage() {
         fontFamily: 'Poppins, sans-serif',
       }}
     >
-      <h1 style={{ fontWeight: '600', fontSize: '32px', marginBottom: '12px', textAlign: 'center' }}>
+      <h1
+        style={{ fontWeight: '600', fontSize: '32px', marginBottom: '12px', textAlign: 'center' }}
+      >
         Settings
       </h1>
 
@@ -34,7 +36,8 @@ export default function SettingsPage() {
 
       <div style={{ marginBottom: '40px' }}>
         <label style={{ display: 'block', fontWeight: '500', marginBottom: '8px' }}>
-          Left Wink Sensitivity: <span style={{ color: '#0070f3' }}>{leftSensitivity.toFixed(2)}</span>
+          Left Wink Sensitivity:{' '}
+          <span style={{ color: '#0070f3' }}>{leftSensitivity.toFixed(2)}</span>
         </label>
         <input
           type="range"
@@ -57,7 +60,8 @@ export default function SettingsPage() {
 
       <div style={{ marginBottom: '40px' }}>
         <label style={{ display: 'block', fontWeight: '500', marginBottom: '8px' }}>
-          Right Wink Sensitivity: <span style={{ color: '#0070f3' }}>{rightSensitivity.toFixed(2)}</span>
+          Right Wink Sensitivity:{' '}
+          <span style={{ color: '#0070f3' }}>{rightSensitivity.toFixed(2)}</span>
         </label>
         <input
           type="range"
@@ -98,9 +102,7 @@ export default function SettingsPage() {
         >
           Calibrate
         </button>
-
-
       </div>
     </div>
-  );
+  )
 }

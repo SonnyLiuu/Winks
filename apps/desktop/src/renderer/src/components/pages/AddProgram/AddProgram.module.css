@@ -59,7 +59,9 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 8px 15px rgba(0, 0, 0, 0.06);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
   border: 2px solid transparent;
   width: 180px;
   height: 180px;

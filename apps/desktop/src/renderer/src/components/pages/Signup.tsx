@@ -11,23 +11,25 @@ type SignupPageProps = {
 export default function SignupPage({
   onSwitchToLogin,
   onGoBack,
-  onSignupSuccess
+  onSignupSuccess,
 }: SignupPageProps): React.JSX.Element {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
   const navigate = useNavigate()
 
+  type AuthResponse = { ok: true } | { ok: false; error: string }
+
   useEffect(() => {
-    const cleanup = window.electron.on('signup-response', (response: any) => {
-      if (response.success) {
+    const cleanup = window.electron.on('signup-response', (response: AuthResponse) => {
+      if (response.ok) {
         setMessage('Account created successfully! Please log in.')
         setEmail('')
         setPassword('')
         onSignupSuccess()
         navigate('/dashboard')
       } else {
-        setMessage(`Error: ${response.message}`)
+        setMessage(`Error: ${response.error}`)
       }
     })
     return () => {

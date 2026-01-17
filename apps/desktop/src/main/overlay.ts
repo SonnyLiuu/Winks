@@ -74,13 +74,13 @@ export function moveOverlay(): void {
     'Top-Left': { x: 0, y: 0 },
     'Top-Right': { x: screenWidth, y: 0 },
     'Bottom-Left': { x: 0, y: screenHeight },
-    'Bottom-Right': { x: screenWidth, y: screenHeight }
+    'Bottom-Right': { x: screenWidth, y: screenHeight },
   }
   const targetPositions = {
     'Top-Left': { x: 0, y: 0 },
     'Top-Right': { x: screenWidth - windowWidth, y: 0 },
     'Bottom-Left': { x: 0, y: screenHeight - windowHeight },
-    'Bottom-Right': { x: screenWidth - windowWidth, y: screenHeight - windowHeight }
+    'Bottom-Right': { x: screenWidth - windowWidth, y: screenHeight - windowHeight },
   }
   let closestCornerName: keyof typeof screenCorners = 'Bottom-Left'
   let minDistance = Infinity

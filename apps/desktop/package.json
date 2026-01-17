@@ -1,5 +1,5 @@
 {
-  "name": "winksui",
+  "name": "Winks",
   "version": "1.1.4",
   "description": "An Electron application with React and TypeScript",
   "main": "out/main/index.js",
@@ -7,8 +7,8 @@
   "homepage": "https://electron-vite.org",
   "scripts": {
     "format": "prettier --write .",
-    "lint": "eslint --cache --ext .ts,.tsx src",
-    "lint:fix": "eslint --cache --fix --ext .ts,.tsx src",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -22,7 +22,7 @@
     "release:patch": "npm version patch --git-tag-version=true --tag-version-prefix=v -m \"chore(release): %s\"",
     "release:minor": "npm version minor --git-tag-version=true --tag-version-prefix=v -m \"chore(release): %s\"",
     "release:major": "npm version major --git-tag-version=true --tag-version-prefix=v -m \"chore(release): %s\"",
-    "prerelease":     "npm version prerelease --preid=beta --git-tag-version=true --tag-version-prefix=v -m \"chore(release): %s\""
+    "prerelease": "npm version prerelease --preid=beta --git-tag-version=true --tag-version-prefix=v -m \"chore(release): %s\""
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
@@ -52,15 +52,17 @@
     "electron-vite": "^3.1.0",
     "eslint": "^9.34.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
-    "globals": "^16.3.0",
-    "prettier": "^3.6.2",
+    "globals": "^16.5.0",
+    "prettier": "^3.8.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "tsx": "^4.20.5",
     "typescript": "^5.4.5",
+    "typescript-eslint": "^8.53.0",
     "vite": "^5.3.5",
     "vitest": "^3.2.4"
   },
@@ -79,21 +81,24 @@
     ],
     "extraResources": [
       {
-        "from": "../python",
-        "to": "python"
+        "from": "../../services/vision/src",
+        "to": "vision/src"
       },
       {
-        "from": "./python_runtime",
+        "from": "./resources/python_runtime",
         "to": "python_runtime"
       },
-      { "from": ".env.production", "to": ".env" }
+      {
+        "from": ".env.production",
+        "to": ".env"
+      }
     ],
     "win": {
       "target": "nsis",
       "executableName": "Winks"
     },
     "nsis": {
-      "artifactName": "${productName}-setup.${ext}",
+      "artifactName": "Winks-Setup.${ext}",
       "shortcutName": "${productName}",
       "uninstallDisplayName": "${productName}",
       "createDesktopShortcut": "always",

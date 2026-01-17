@@ -1,8 +1,8 @@
-import { WithId } from "mongodb";
+import { WithId } from 'mongodb'
 
 export interface User {
-  email: string;
-  hashedPassword: string;
+  email: string
+  hashedPassword: string
 }
 
-export type UserWithId = WithId<User>;
+export type UserWithId = WithId<User>

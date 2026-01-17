@@ -1,5 +1,5 @@
-body{
-    background-color: #f0f4ff;
+body {
+  background-color: #f0f4ff;
 }
 
 .top-buttons-container {
@@ -31,7 +31,8 @@ body{
 }
 
 /* New styles for the select/remove buttons */
-.select-button, .remove-selected-button {
+.select-button,
+.remove-selected-button {
   padding: 14px 28px;
   font-size: 16px;
   font-weight: 600;
@@ -66,7 +67,6 @@ body{
   box-shadow: none;
 }
 
-
 .quick-links-container {
   position: relative;
   padding: 60px 4vw; /* Use viewport width for responsive padding */
@@ -82,11 +82,11 @@ body{
   overflow-y: auto;
 }
 
-  .quick-links-container h2 {
-    font-size: 36px;
-    margin-bottom: 40px;
-    color: #2c3e50;
-  }
+.quick-links-container h2 {
+  font-size: 36px;
+  margin-bottom: 40px;
+  color: #2c3e50;
+}
 
 .tiles-grid {
   display: grid;
@@ -101,70 +101,72 @@ body{
   display: flex;
   justify-content: center; /* This centers the main item, the h2 */
   align-items: center;
-  position: relative;      /* This is the key for positioning the button */
-  margin-bottom: 2rem;     /* Adds space below the header */
+  position: relative; /* This is the key for positioning the button */
+  margin-bottom: 2rem; /* Adds space below the header */
 }
 
 .tile {
-    /*width: 220px;*/
-    height: 220px;
-    background: white;
-    border-radius: 18px;
-    text-decoration: none;
-    color: #2c3e50;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
-    border: 2px solid transparent;
-  }
+  /*width: 220px;*/
+  height: 220px;
+  background: white;
+  border-radius: 18px;
+  text-decoration: none;
+  color: #2c3e50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+  border: 2px solid transparent;
+}
 
-  .tile:hover {
-    transform: translateY(-8px) scale(1.05);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12);
-    border-color: #5c80ff;
-  }
+.tile:hover {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12);
+  border-color: #5c80ff;
+}
 
-  .tile-icon {
-    width: 90px;
-    height: 90px;
-    object-fit: contain;
-    margin-bottom: 16px;
-    transition: transform 0.3s ease;
-  }
+.tile-icon {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  margin-bottom: 16px;
+  transition: transform 0.3s ease;
+}
 
-  .tile:hover .tile-icon {
-    transform: rotate(5deg) scale(1.1);
-  }
+.tile:hover .tile-icon {
+  transform: rotate(5deg) scale(1.1);
+}
 
-  .tile-label {
-    font-size: 18px;
-    font-weight: 600;
-    color: #333;
-  }
+.tile-label {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
 
-  /* Back Button */
-  .back-button {
-    margin-top: 20px;
-    padding: 14px 34px;
-    background: linear-gradient(135deg, #5c80ff, #3558e3);
-    color: white;
-    font-size: 16px;
-    font-weight: 600;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    box-shadow: 0 8px 20px rgba(92, 128, 255, 0.3);
-    transition: all 0.3s ease;
-  }
+/* Back Button */
+.back-button {
+  margin-top: 20px;
+  padding: 14px 34px;
+  background: linear-gradient(135deg, #5c80ff, #3558e3);
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(92, 128, 255, 0.3);
+  transition: all 0.3s ease;
+}
 
-  .back-button:hover {
-    background: linear-gradient(135deg, #3f66f1, #2038cc);
-    transform: translateY(-2px);
-    box-shadow: 0 12px 30px rgba(63, 102, 241, 0.4);
-  }
+.back-button:hover {
+  background: linear-gradient(135deg, #3f66f1, #2038cc);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(63, 102, 241, 0.4);
+}
 
 .add-website-button {
   padding: 14px 28px;
@@ -182,7 +184,6 @@ body{
   background: linear-gradient(135deg, #138496, #117a8b);
   transform: translateY(-2px);
 }
-
 
 /* Modal Styles */
 .modal-overlay {
@@ -234,7 +235,9 @@ body{
   border-radius: 8px;
   border: 1px solid #ced4da;
   box-sizing: border-box;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .form-group input:focus {
@@ -250,7 +253,8 @@ body{
   margin-top: 30px;
 }
 
-.modal-cancel-button, .modal-save-button {
+.modal-cancel-button,
+.modal-save-button {
   padding: 12px 28px;
   font-size: 16px;
   font-weight: 600;

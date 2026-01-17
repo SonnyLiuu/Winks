@@ -21,6 +21,15 @@ Winks is an accessibility-focused desktop application that enables users to inte
 
 Download Winks from: https://github.com/SonnyLiuu/Winks/releases
 
+or run from source
+
+```powershell
+cd services/vision
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.in
+
 ## Contributors
 
 This project was developed as part of **UCF Senior Design (2025)**:
@@ -35,3 +44,4 @@ This project was developed as part of **UCF Senior Design (2025)**:
 
 📌 **Note:** This repository is for **academic and portfolio showcase purposes only**.
 All rights reserved by the original authors.
+```

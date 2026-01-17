@@ -62,7 +62,7 @@ function OverlayGetClick(): React.JSX.Element {
       'top-left': { x: 0, y: 0 },
       'top-right': { x: screenWidth, y: 0 },
       'bottom-left': { x: 0, y: screenHeight },
-      'bottom-right': { x: screenWidth, y: screenHeight }
+      'bottom-right': { x: screenWidth, y: screenHeight },
     }
 
     let minDistanceSq = Infinity
@@ -100,7 +100,7 @@ function OverlayGetClick(): React.JSX.Element {
                 borderBottomRightRadius: '400px',
                 border: '15px solid black',
                 pointerEvents: 'none',
-                opacity: '.4'
+                opacity: '.4',
               }}
             />
           )}
@@ -116,7 +116,7 @@ function OverlayGetClick(): React.JSX.Element {
                 borderBottomLeftRadius: '400px',
                 border: '15px solid black',
                 pointerEvents: 'none',
-                opacity: '.4'
+                opacity: '.4',
               }}
             />
           )}
@@ -132,7 +132,7 @@ function OverlayGetClick(): React.JSX.Element {
                 borderTopRightRadius: '400px',
                 border: '15px solid black',
                 pointerEvents: 'none',
-                opacity: '.4'
+                opacity: '.4',
               }}
             />
           )}
@@ -148,7 +148,7 @@ function OverlayGetClick(): React.JSX.Element {
                 borderTopLeftRadius: '400px',
                 border: '15px solid black',
                 pointerEvents: 'none',
-                opacity: '.4'
+                opacity: '.4',
               }}
             />
           )}
@@ -173,7 +173,7 @@ function OverlayGetClick(): React.JSX.Element {
             // This transform centers the dot perfectly on the cursor
             transform: 'translate(-50%, -50%)',
             // Prevents the dot itself from being clickable
-            pointerEvents: 'none'
+            pointerEvents: 'none',
           }}
         />
       ))}

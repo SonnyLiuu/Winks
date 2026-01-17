@@ -1,24 +1,31 @@
-import { HashRouter as Router, Routes, Route } from 'react-router-dom'
-import { useState } from 'react'
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+
 import HomePage from './components/pages/Homepage'
-import CalibrationPage from './components/pages/callibrationPage' // <-- make sure this exists
+import CalibrationPage from './components/pages/CalibrationPage'
 import MainLayout from './components/Layout/MainLayout'
 import QuickLinks from './components/pages/QuickLinks'
 import AddProgram from './components/pages/AddProgram/AddProgram'
 
+
 function App(): React.JSX.Element {
-  const [isLoggedIn, setIsLoggedIn] = useState(false) // Manage login state
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
-  const handleLoginSuccess = () => {
+  useEffect(() => {
+    setIsLoggedIn(localStorage.getItem('winks:isLoggedIn') === '1')
+  }, [])
+
+  const login = () => {
     setIsLoggedIn(true)
-    // Potentially store login status in localStorage/sessionStorage here
+    localStorage.setItem('winks:isLoggedIn', '1')
   }
 
-  const handleLogout = () => {
+  const logout = () => {
     setIsLoggedIn(false)
-    // Clear any stored login tokens/sessions
-    // The navigate is handled by Navbar's Logout button
+    localStorage.removeItem('winks:isLoggedIn')
   }
+
+  const protect = (el: React.ReactElement) => (isLoggedIn ? el : <Navigate to="/" replace />)
 
   return (
     <Router>
@@ -27,16 +34,11 @@ function App(): React.JSX.Element {
         <Route path="/calibration" element={<CalibrationPage />} />
         <Route
           path="/dashboard"
-          element={
-            <MainLayout
-              isLoggedIn={isLoggedIn}
-              onLogout={handleLogout}
-              onLoginSuccess={handleLoginSuccess}
-            />
-          }
+          element={<MainLayout isLoggedIn={isLoggedIn} onLogout={logout} onLoginSuccess={login} />}
         />
-        <Route path="/quick-links" element={<QuickLinks />} />
-        <Route path="/add-program" element={<AddProgram />} />
+        <Route path="/quick-links" element={protect(<QuickLinks />)} />
+        <Route path="/add-program" element={protect(<AddProgram />)} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   )

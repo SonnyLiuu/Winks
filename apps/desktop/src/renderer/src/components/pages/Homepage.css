@@ -2,7 +2,8 @@
 
 /* Homepage.css */
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -163,7 +164,8 @@ html, body {
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px);
   }
   50% {
@@ -191,7 +193,6 @@ html, body {
     box-shadow: 0 0 0 0 rgba(0, 112, 243, 0);
   }
 }
-
 
 @media (max-width: 600px) {
   .home-logo {

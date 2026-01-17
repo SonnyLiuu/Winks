@@ -14,7 +14,7 @@ const linkStyle: React.CSSProperties = {
   cursor: 'pointer',
   fontSize: '16px',
   textAlign: 'left',
-  padding: 0
+  padding: 0,
 }
 
 export default function Navbar({ onSelect, onLogout, isLoggedIn }: Props) {
@@ -50,7 +50,7 @@ export default function Navbar({ onSelect, onLogout, isLoggedIn }: Props) {
         padding: '24px 16px',
         boxSizing: 'border-box',
         borderRight: '1px solid #ddd',
-        height: '100vh'
+        height: '100vh',
       }}
     >
       <div>
@@ -84,7 +84,7 @@ export default function Navbar({ onSelect, onLogout, isLoggedIn }: Props) {
             width: '90%',
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             fontSize: '16px',
-            transition: 'transform 0.2s ease'
+            transition: 'transform 0.2s ease',
           }}
           onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
           onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
@@ -103,15 +103,15 @@ export default function Navbar({ onSelect, onLogout, isLoggedIn }: Props) {
           border: 'none',
           borderRadius: '6px',
           cursor: 'pointer',
-          transition: 'transform 0.2s ease, background-color 0.3s ease'
+          transition: 'transform 0.2s ease, background-color 0.3s ease',
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.05)';
-          (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d32f2f';
+          ;(e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.05)'
+          ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d32f2f'
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
-          (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#e53935';
+          ;(e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'
+          ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = '#e53935'
         }}
       >
         Logout

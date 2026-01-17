@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import './AuthPage.css'
 
 export default function ForgotPasswordPage({
-  onGoBackToLogin
+  onGoBackToLogin,
 }: {
   onGoBackToLogin: () => void
 }): React.JSX.Element {

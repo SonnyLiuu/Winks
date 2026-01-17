@@ -1,4 +1,4 @@
-import { assets } from '../../assets/assets.ts';
+import { assets } from '../../assets/assets.ts'
 
 function Header(): React.JSX.Element {
   return (
@@ -28,7 +28,7 @@ function Header(): React.JSX.Element {
         }}
       />
     </header>
-  );
+  )
 }
 
-export default Header;
+export default Header

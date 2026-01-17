@@ -56,7 +56,7 @@ function Overlay(): React.JSX.Element {
         width: '100%',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
       }}
     >
       {nearMouse && (
@@ -98,7 +98,7 @@ function Overlay(): React.JSX.Element {
           borderRadius: '50%',
           backgroundColor: 'lightskyblue',
           border: '15px solid black',
-          opacity: 0.3
+          opacity: 0.3,
         }}
       />
     </div>
