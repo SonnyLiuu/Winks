@@ -4,7 +4,7 @@ concurrency:
   group: release
   cancel-in-progress: true
 
-on:
+'on':
   push:
     tags:
       - "v*"
@@ -23,6 +23,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+
       - name: Guard: tag matches apps/desktop package.json version
         if: startsWith(github.ref, 'refs/tags/')
         shell: pwsh
@@ -31,18 +38,11 @@ jobs:
           $pkg = (Get-Content apps/desktop/package.json -Raw | ConvertFrom-Json).version
           if ($tag -ne $pkg) { throw "Tag v$tag != apps/desktop package.json $pkg" }
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: apps/desktop/package-lock.json
-
-      # IMPORTANT: run your setup script from repo root so it can build the python runtime
+      # Run setup from repo root (so scripts/setup.ps1 path works)
       - name: Setup (Node + Python + embedded runtime)
         shell: pwsh
         run: |
-          powershell -ExecutionPolicy Bypass -File scripts/setup.ps1
+          ./scripts/setup.ps1
 
       - name: Build (renderer/main)
         working-directory: apps/desktop
