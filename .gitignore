@@ -1,17 +1,44 @@
+# ======================
+# OS / Editor junk
+# ======================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ======================
+# Secrets
+# ======================
+.env
+.env.*
+!.env.example
+
+# ======================
+# Node / Electron / Vite
+# ======================
 node_modules/
-venv/
-out/
 dist/
+out/
+build/
+.vite/
+*.log
+.eslintcache
 
-WinksUI/.env
-WinksUI/node_modules
-WinksUI/dist
-WinksUI/out
-WinksUI/.DS_Store
-WinksUI/.eslintcache
-WinksUI/*.log*
-WinksUI/python_runtime
-WinksUI/py_wheels
-python/_internal
+# electron-builder outputs
+release/
+releases/
+*.exe
+*.msi
+*.dmg
+*.AppImage
 
-
+# ======================
+# Python
+# ======================
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/

@@ -8,7 +8,7 @@ import { autoUpdater } from 'electron-updater'
 import * as path from 'node:path'
 import { JSDOM } from 'jsdom'
 import fs from 'node:fs'
-import 'dotenv/config'
+import dotenv from 'dotenv'
 
 
 // --- Consolidated Imports ---
@@ -19,10 +19,9 @@ import {
   startOverlayProximityWatcher, // Import the watcher controls
   stopOverlayProximityWatcher
 } from './overlay'
-import { connectToDatabase, createUser, verifyUser } from './database'
 
 // Debugging
-const DEBUG = process.env.WINKS_DEBUG === '1'; // set to "1" only when you want logs
+let DEBUG = false
 const dlog = (...a: any[]) => { if (DEBUG) console.log(...a) }
 const derr = (...a: any[]) => { if (DEBUG) console.error(...a) }
 
@@ -33,6 +32,12 @@ let overlayWindow: BrowserWindow | null
 let isQuitting = false
 
 // --- Helper Functions to get File Paths ---
+function getRepoRoot(): string {
+  // In dev, Electron is launched from apps/desktop
+  // Repo root is two levels up
+  return path.resolve(process.cwd(), '..', '..')
+}
+
 function resolveExisting(...candidates: string[]): string {
   for (const p of candidates) {
     if (fs.existsSync(p)) return p
@@ -42,29 +47,39 @@ function resolveExisting(...candidates: string[]): string {
 
 function getPythonScriptPath(): string {
   if (!app.isPackaged) {
-    // Support either layout:
-    // - python folder at repo root: Winks/python/...
-    // - python folder inside WinksUI: Winks/WinksUI/python/...
+    const repoRoot = getRepoRoot()
     return resolveExisting(
-      path.join(process.cwd(), '..', 'python', 'head_wink_combined.py'),
-      path.join(process.cwd(), 'python', 'head_wink_combined.py')
+      path.join(repoRoot, 'services', 'vision', 'src', 'head_wink_combined.py'),
+      path.join(repoRoot, 'services', 'vision', 'src', 'detector_process.py')
     )
   }
-  return path.join(process.resourcesPath, 'python', 'head_wink_combined.py')
+  return path.join(process.resourcesPath, 'vision', 'src', 'head_wink_combined.py')
 }
 
 function getModelPath(): string {
   if (!app.isPackaged) {
+    const repoRoot = getRepoRoot()
     return resolveExisting(
-      path.join(process.cwd(), '..', 'python', 'face_landmarker.task'),
-      path.join(process.cwd(), 'python', 'face_landmarker.task')
+      path.join(repoRoot, 'services', 'vision', 'src', 'face_landmarker.task')
     )
   }
-  return path.join(process.resourcesPath, 'python', 'face_landmarker.task')
+  return path.join(process.resourcesPath, 'vision', 'src', 'face_landmarker.task')
 }
 
 // region app.whenReady
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Load env (dev and packaged)
+  dotenv.config()
+  if (app.isPackaged) {
+    dotenv.config({ path: path.join(process.resourcesPath, '.env') })
+  }
+  // Back-compat: prefer MONGODB_URI, fall back to DB_URI
+  if (!process.env.DB_URI && process.env.MONGODB_URI) {
+    process.env.DB_URI = process.env.MONGODB_URI
+  }
+  // Enable debug after env is loaded
+  DEBUG = process.env.WINKS_DEBUG === '1'
+
   electronApp.setAppUserModelId('com.winks.app')
 
   app.on('browser-window-created', (_, window) => {
@@ -78,36 +93,33 @@ app.whenReady().then(() => {
   // --- Python Script Spawning ---
   function getPythonExecutablePath(): string {
     if (!app.isPackaged) {
-      // 1) explicit override via .env
       const envPy = process.env.DEV_PYTHON
       if (envPy && fs.existsSync(envPy)) return envPy
   
-      // 2) common local dev runtimes
-      const guesses = [
-        // venv at repo root: Winks/venv
-        path.join(process.cwd(), '..', 'venv', 'Scripts', 'python.exe'),
-        path.join(process.cwd(), '..', 'venv', 'bin', 'python3'),
-        // python_runtime checked into WinksUI/python_runtime
-        path.join(process.cwd(), 'python_runtime', 'python.exe'),
-        path.join(process.cwd(), 'python_runtime', 'bin', 'python3')
-      ]
-      const found = guesses.find(fs.existsSync)
-      if (found) return found
+      const repoRoot = getRepoRoot()
+      const venvPy = path.join(repoRoot, 'services', 'vision', '.venv', 'Scripts', 'python.exe')
+      if (fs.existsSync(venvPy)) return venvPy
   
-      // 3) PATH fallback
       return process.platform === 'win32' ? 'python' : 'python3'
     }
   
-    // packaged: bundled runtime in resources
     return process.platform === 'win32'
       ? path.join(process.resourcesPath, 'python_runtime', 'python.exe')
       : path.join(process.resourcesPath, 'python_runtime', 'bin', 'python3')
   }
   
+  
   const exe = getPythonExecutablePath()
   const script = getPythonScriptPath()
   const model = getModelPath()
   
+  console.log("cwd:", process.cwd())
+  console.log("repoRoot:", getRepoRoot())
+  console.log("python exe:", exe)
+  console.log("python script:", script)
+  console.log("model path:", model)
+  
+
   pythonProcess = spawn(exe, [script, model], {
     stdio: ['pipe', 'pipe', 'pipe'],
     env: { ...process.env } // keep PATH/venv vars
@@ -134,7 +146,39 @@ app.whenReady().then(() => {
     app.quit()
   })
 
-  connectToDatabase()
+  let createUser: any
+  let verifyUser: any
+  try {
+    const db = await import('./database')
+    if (process.env.DB_URI) {
+      await db.connectToDatabase()         // reads DB_URI now that env is loaded
+    } else {
+      derr('No DB_URI/MONGODB_URI found; continuing without DB.')
+    }
+    createUser = db.createUser
+    verifyUser = db.verifyUser
+  } catch (e) {
+    derr('Failed to init database module:', e)
+  }
+
+  if (createUser && verifyUser) {
+    ipcMain.on('signup-user', async (event, { email, password }) => {
+      const result = await createUser(email, password)
+      event.reply('signup-response', result)
+    })
+    ipcMain.on('login-user', async (event, { email, password }) => {
+      const result = await verifyUser(email, password)
+      event.reply('login-response', result)
+    })
+  } else {
+    // Graceful replies if DB isn’t configured
+    ipcMain.on('signup-user', (event) =>
+      event.reply('signup-response', { ok: false, error: 'Database unavailable' })
+    )
+    ipcMain.on('login-user', (event) =>
+      event.reply('login-response', { ok: false, error: 'Database unavailable' })
+    )
+  }
 
   // --- Create Windows and store references ---
   mainWindow = createMainWindow()
@@ -432,15 +476,6 @@ ipcMain.on('remove-programs', (_event, programIdsToRemove: number[]) => {
 // region IPC Handlers
 // ===================================================================
 
-// --- Database Handlers ---
-ipcMain.on('signup-user', async (event, { email, password }) => {
-  const result = await createUser(email, password)
-  event.reply('signup-response', result)
-})
-ipcMain.on('login-user', async (event, { email, password }) => {
-  const result = await verifyUser(email, password)
-  event.reply('login-response', result)
-})
 
 // --- Auto-update IPC Handlers ---
 ipcMain.handle('update:check', () => autoUpdater.checkForUpdatesAndNotify())

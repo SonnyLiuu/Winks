@@ -1,5 +1,9 @@
 name: Release
 
+concurrency:
+  group: release
+  cancel-in-progress: true
+
 on:
   push:
     tags:
@@ -9,10 +13,10 @@ on:
 permissions:
   contents: write
 
-# 👇 run all shell steps inside WinksUI
+# Run all shell steps inside the desktop app folder
 defaults:
   run:
-    working-directory: WinksUI
+    working-directory: apps/desktop
 
 jobs:
   windows:
@@ -24,12 +28,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Fail early if the pushed tag (vX.Y.Z) doesn't match package.json version
+      - name: Guard: tag matches package.json version
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}".TrimStart('v')
+          $pkg = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($tag -ne $pkg) { Write-Error "Tag v$tag != package.json $pkg"; exit 1 }
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: "npm"
-          cache-dependency-path: WinksUI/package-lock.json
+          # path is from repo root
+          cache-dependency-path: apps/desktop/package-lock.json
 
       - name: Install deps
         run: npm ci
@@ -41,22 +55,6 @@ jobs:
         run: npx electron-builder --win --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Optional signing:
+          # Optional Windows code signing:
           # CSC_LINK: ${{ secrets.WINDOWS_CERT_PFX }}
           # CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERT_PASS }}
-
-  # Uncomment to add Linux builds (no signing required by default)
-  # linux:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with: { fetch-depth: 0 }
-  #     - uses: actions/setup-node@v4
-  #       with: { node-version: 20, cache: 'npm' }
-  #     - run: npm ci
-  #     - run: npm run build
-  #     - run: npx electron-builder --linux --publish always
-  #       env:
-  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # macOS builds require signing & (usually) notarization. Add later when ready.

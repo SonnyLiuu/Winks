@@ -1,1 +1,0 @@
-Python scripts (wink detection, etc)

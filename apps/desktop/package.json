@@ -85,7 +85,8 @@
       {
         "from": "./python_runtime",
         "to": "python_runtime"
-      }
+      },
+      { "from": ".env.production", "to": ".env" }
     ],
     "win": {
       "target": "nsis",
