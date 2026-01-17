@@ -129,8 +129,8 @@ app.whenReady().then(async () => {
   }
 
   // Back-compat: prefer MONGODB_URI, fall back to DB_URI
-  if (!process.env.DB_URI && process.env.MONGODB_URI) {
-    process.env.DB_URI = process.env.MONGODB_URI
+  if (!process.env.DB_URI && process.env.DB_URI) {
+    process.env.DB_URI = process.env.DB_URI
   }
 
   // Enable debug after env is loaded
