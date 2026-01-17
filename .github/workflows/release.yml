@@ -43,6 +43,10 @@ jobs:
         run: |
           ./scripts/setup.ps1
 
+        - name: Install deps
+        working-directory: apps/desktop
+        run: npm ci
+        
       - name: Build (renderer/main)
         working-directory: apps/desktop
         run: npm run build
