@@ -1,3 +1,4 @@
+# Winks
 Winks is an accessibility-focused desktop application that enables users to interact with their computer using head movement and winks. It provides an alternative input method for individuals with limited motor abilities, combining real-time computer vision with a lightweight menu and overlay.
 
 <img width="1545" height="1158" alt="WinksStartPage" src="https://github.com/user-attachments/assets/7a612a65-4a46-46d5-9cf3-b07b0caffd58" />
