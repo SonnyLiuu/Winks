@@ -7,7 +7,6 @@ import MainLayout from './components/Layout/MainLayout'
 import QuickLinks from './components/pages/QuickLinks'
 import AddProgram from './components/pages/AddProgram/AddProgram'
 
-
 function App(): React.JSX.Element {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 

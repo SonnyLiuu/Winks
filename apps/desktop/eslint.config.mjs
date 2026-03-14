@@ -57,7 +57,7 @@ export default [
     },
   },
 
-  // ✅ Override: tests can use any / Function
+  // Override: tests can use any / Function
   {
     files: ['**/*.test.{ts,tsx}', '**/__tests__/**/*.{ts,tsx}'],
     rules: {
@@ -69,7 +69,7 @@ export default [
     },
   },
 
-  // ✅ Override: preload (IPC types often require any)
+  // Override: preload (IPC types often require any)
   {
     files: ['src/preload/**/*.{ts,tsx,d.ts}'],
     rules: {
@@ -78,6 +78,5 @@ export default [
     },
   },
 
-  // IMPORTANT: last = disables formatting conflicts with Prettier
   prettierConfig,
 ]
